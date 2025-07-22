@@ -42,6 +42,10 @@ document.getElementById("uploadBtn").onclick = async () => {
   fd.append("video", v);
   fd.append("audio", a);
   fd.append("times", j);
+
+  // 👇👇 ADD THIS LOG TO CONFIRM BUTTON CLICK WORKS
+  console.log("Upload button clicked. Sending request...");
+
   const res = await fetch("/upload", { method: "POST", body: fd }).then(r => r.json());
   const uid = res.id;
 
