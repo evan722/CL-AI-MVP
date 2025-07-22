@@ -1,16 +1,92 @@
+import asyncio
+import base64
 import subprocess
-import os
+import tempfile
+from pathlib import Path
+from asyncio import Queue, Event
+
 
 class Wav2LipStreamer:
-    @staticmethod
-    def run(video_path, audio_path):
-        out_path = "static/avatar.mp4"
+    """
+    Very‑light wrapper that:
+    1. Launches `wav2lip/inference.py` as a subprocess.
+    2. Reads JPEG frames as raw bytes from stdout, base64‑encodes, and
+       feeds them to an async queue.
+    3. Supports play/pause and (naïve) seek by restarting the process.
+    """
+
+    WEIGHTS = "wav2lip/checkpoints/wav2lip_gan.pth"
+    FACE_IMG = "static/avatar_face.jpg"  # replace with your still portrait
+
+    def __init__(self, audio_path: str):
+        self.audio_path = audio_path
+        self.proc: subprocess.Popen | None = None
+        self.queue: Queue[str] = Queue(maxsize=2)
+        self.play: Event = Event()
+        self.play.set()          # start in “playing” state
+
+    # ------------------------------------------------------------------
+    async def run(self):
+        """Start Wav2Lip and continuously read frames into the queue."""
+        # Build command
         cmd = [
             "python3", "wav2lip/inference.py",
-            "--checkpoint_path", "checkpoints/wav2lip_gan.pth",
-            "--face", video_path,
-            "--audio", audio_path,
-            "--outfile", out_path
+            "--checkpoint_path", self.WEIGHTS,
+            "--face", self.FACE_IMG,
+            "--audio", self.audio_path,
+            "--outfile", "-",          # stream frames to stdout
+            "--fps", "25"
         ]
-        print("Running:", " ".join(cmd))
-        subprocess.run(cmd)
+
+        # Launch subprocess
+        self.proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=0
+        )
+
+        # Continuously read length‑prefixed JPEG frames from stdout
+        try:
+            while True:
+                # Each frame: 4‑byte big‑endian length header + JPEG bytes
+                hdr = await self.proc.stdout.readexactly(4)
+                frame_len = int.from_bytes(hdr, "big")
+                jpg = await self.proc.stdout.readexactly(frame_len)
+                b64 = base64.b64encode(jpg).decode()
+
+                # Respect pause
+                await self.play.wait()
+                await self.queue.put(b64)
+        except asyncio.IncompleteReadError:
+            pass  # subprocess finished
+        finally:
+            self.stop()
+
+    # ------------------------------------------------------------------
+    async def next_frame(self) -> str | None:
+        """Return next base64 frame (or None if nothing yet)."""
+        try:
+            return await asyncio.wait_for(self.queue.get(), timeout=0.1)
+        except asyncio.TimeoutError:
+            return None
+
+    # ------------------------------------------------------------------
+    def seek(self, _t: float):
+        """
+        Naïve seek: stop current process and restart from beginning.
+        (Good enough for MVP. For real seeking, you’d clip the audio
+        and start from that offset.)
+        """
+        self.stop()
+        self.queue = Queue(maxsize=2)
+        asyncio.create_task(self.run())
+
+    # ------------------------------------------------------------------
+    def stop(self):
+        if self.proc and self.proc.returncode is None:
+            self.proc.kill()
+            try:
+                self.proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                self.proc.terminate()
