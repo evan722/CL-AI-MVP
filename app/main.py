@@ -11,7 +11,10 @@ UPLOADS = ROOT / "uploads"
 UPLOADS.mkdir(exist_ok=True, parents=True)
 
 app = FastAPI()
+
+# Mount static and uploads directories
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/uploads", StaticFiles(directory=UPLOADS), name="uploads")
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -22,14 +25,14 @@ async def home():
 async def upload(
     video: UploadFile,
     audio: UploadFile,
-    times: UploadFile,           # timestamps.json
+    times: UploadFile,  # timestamps.json
 ):
     uid = uuid.uuid4().hex
     vpath = UPLOADS / f"{uid}_video.mp4"
     apath = UPLOADS / f"{uid}_audio.wav"
     tpath = UPLOADS / f"{uid}_timestamps.json"
 
-    # save files
+    # Save files
     async with aiofiles.open(vpath, "wb") as f:
         while chunk := await video.read(1 << 20):
             await f.write(chunk)
@@ -50,7 +53,7 @@ async def avatar_ws(ws: WebSocket, uid: str):
     await ws.accept()
     streamer = None
     try:
-        # initialise on connect
+        # Initialize on connect
         audio_file = UPLOADS / f"{uid}_audio.wav"
         streamer = Wav2LipStreamer(str(audio_file))
         active_streams[uid] = streamer
@@ -59,12 +62,12 @@ async def avatar_ws(ws: WebSocket, uid: str):
         while True:
             if ws.application_state != WebSocketState.CONNECTED:
                 break
-            # push next frame if playing
+            # Push next frame if playing
             if streamer.play.is_set():
                 frame = await streamer.next_frame()
                 if frame:
                     await ws.send_text(frame)
-            # receive commands
+            # Receive commands
             if ws.client_state == WebSocketState.DISCONNECTED:
                 break
             try:
