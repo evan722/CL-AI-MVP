@@ -19,7 +19,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all app files and static assets
 COPY . /app
-COPY static /app/static  # ✅ Ensure avatar_face.jpg is included
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
