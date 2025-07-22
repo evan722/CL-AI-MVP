@@ -2,11 +2,12 @@ import asyncio
 import base64
 import subprocess
 from asyncio import Queue, Event
+from typing import Optional
 
 
 class Wav2LipStreamer:
     """
-    Very-light wrapper that:
+    Wrapper that:
     1. Launches `wav2lip/inference.py` as a subprocess.
     2. Reads JPEG frames as raw bytes from stdout, base64-encodes them,
        and feeds them to an async queue.
@@ -14,51 +15,53 @@ class Wav2LipStreamer:
     """
 
     def __init__(self, audio_path: str):
-        self.audio_path = audio_path
-        self.face_img = "static/avatar_face.jpg"  # ✅ Use self.face_img instead of global var
-        self.weights = "wav2lip/checkpoints/wav2lip_gan.pth"
-        self.proc: subprocess.Popen | None = None
+        self.audio_path: str = audio_path
+        self.face_img: str = "static/avatar_face.jpg"
+        self.weights: str = "wav2lip/checkpoints/wav2lip_gan.pth"
+        self.proc: Optional[subprocess.Popen] = None
         self.queue: Queue[str] = Queue(maxsize=2)
         self.play: Event = Event()
-        self.play.set()  # start in “playing” state
+        self.play.set()  # Start in playing state
 
     # ------------------------------------------------------------------
     async def run(self):
-        """Start Wav2Lip and continuously read frames into the queue."""
+        """Start Wav2Lip subprocess and stream frames into the queue."""
         cmd = [
             "python3", "wav2lip/inference.py",
             "--checkpoint_path", self.weights,
             "--face", self.face_img,
             "--audio", self.audio_path,
-            "--outfile", "-",  # stream frames to stdout
+            "--outfile", "-",  # Output to stdout
             "--fps", "25"
         ]
 
-        self.proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            bufsize=0
-        )
-
         try:
+            self.proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=0
+            )
+
             while True:
-                # Each frame: 4-byte big-endian length header + JPEG bytes
                 hdr = await self.proc.stdout.readexactly(4)
                 frame_len = int.from_bytes(hdr, "big")
                 jpg = await self.proc.stdout.readexactly(frame_len)
                 b64 = base64.b64encode(jpg).decode()
 
-                await self.play.wait()  # Respect pause
+                await self.play.wait()
                 await self.queue.put(b64)
+
         except asyncio.IncompleteReadError:
-            pass  # subprocess finished
+            pass  # Process ended
+        except Exception as e:
+            print(f"[Wav2LipStreamer] Error during run: {e}")
         finally:
             self.stop()
 
     # ------------------------------------------------------------------
-    async def next_frame(self) -> str | None:
-        """Return next base64 frame (or None if nothing yet)."""
+    async def next_frame(self) -> Optional[str]:
+        """Return next base64 frame (or None if queue is empty)."""
         try:
             return await asyncio.wait_for(self.queue.get(), timeout=0.1)
         except asyncio.TimeoutError:
@@ -66,16 +69,19 @@ class Wav2LipStreamer:
 
     # ------------------------------------------------------------------
     def seek(self, _t: float):
-        """Naïve seek: restart the process from the beginning."""
+        """Restart the subprocess from the beginning (naïve seek)."""
         self.stop()
         self.queue = Queue(maxsize=2)
         asyncio.create_task(self.run())
 
     # ------------------------------------------------------------------
     def stop(self):
+        """Stop the subprocess safely."""
         if self.proc and self.proc.returncode is None:
-            self.proc.kill()
             try:
+                self.proc.kill()
                 self.proc.wait(timeout=1)
             except subprocess.TimeoutExpired:
                 self.proc.terminate()
+            finally:
+                self.proc = None
