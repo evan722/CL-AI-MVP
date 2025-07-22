@@ -4,15 +4,65 @@
   <meta charset="utf-8" />
   <title>Avatar‑Synced Slides</title>
   <style>
-    body{margin:0;font-family:sans-serif;background:#f4f6fa;}
-    #root{display:flex;flex-direction:column;height:100vh}
-    #playerRow{display:flex;flex:1}
-    #videoBox{flex:3;position:relative;background:black}
-    #avatarCanvas{position:absolute;bottom:10px;left:10px;width:180px;height:180px;border-radius:50%}
-    #slideInfo{position:absolute;top:10px;left:10px;padding:4px 8px;background:#000a;color:#fff;border-radius:4px;font-size:14px}
-    #controls{flex:1;padding:12px;border-left:1px solid #ccc;display:flex;flex-direction:column;gap:12px}
-    input[type=file]{border:1px solid #aaa;padding:4px;border-radius:4px}
-    button{padding:8px 12px;border:none;border-radius:4px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f4f6fa;
+    }
+    #root {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #playerRow {
+      display: flex;
+      flex: 1;
+    }
+    #videoBox {
+      flex: 3;
+      position: relative;
+      background: black;
+    }
+    #avatarCanvas {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+    }
+    #slideInfo {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 4px 8px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    #controls {
+      flex: 1;
+      padding: 12px;
+      border-left: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    input[type=file] {
+      border: 1px solid #aaa;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -21,13 +71,19 @@
       <div id="videoBox">
         <video id="vid" width="100%" controls muted></video>
         <canvas id="avatarCanvas"></canvas>
-        <div id="slideInfo">Slide 0</div>
+        <div id="slideInfo">Slide 0</div>
       </div>
       <div id="controls">
-        <label>Slides video: <input id="videoFile" type="file" accept="video/mp4"/></label>
-        <label>Audio narration: <input id="audioFile" type="file" accept="audio/*"/></label>
-        <label>Timestamps JSON: <input id="timeFile" type="file" accept=".json"/></label>
-        <button id="uploadBtn">Upload & Start</button>
+        <label>Slides video:
+          <input id="videoFile" type="file" accept="video/mp4" />
+        </label>
+        <label>Audio narration:
+          <input id="audioFile" type="file" accept="audio/*" />
+        </label>
+        <label>Timestamps JSON:
+          <input id="timeFile" type="file" accept=".json" />
+        </label>
+        <button id="uploadBtn">Upload & Start</button>
       </div>
     </div>
   </div>
