@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import subprocess
 from asyncio import Queue, Event
 from typing import Optional
 
@@ -18,7 +17,7 @@ class Wav2LipStreamer:
         self.audio_path: str = audio_path
         self.face_img: str = "static/avatar_face.jpg"
         self.weights: str = "wav2lip/checkpoints/wav2lip_gan.pth"
-        self.proc: Optional[subprocess.Popen] = None
+        self.proc: Optional[asyncio.subprocess.Process] = None
         self.queue: Queue[str] = Queue(maxsize=2)
         self.play: Event = Event()
         self.play.set()  # Start in playing state
@@ -38,8 +37,8 @@ class Wav2LipStreamer:
         try:
             self.proc = await asyncio.create_subprocess_exec(
                 *cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
                 bufsize=0
             )
 
@@ -57,7 +56,7 @@ class Wav2LipStreamer:
         except Exception as e:
             print(f"[Wav2LipStreamer] Error during run: {e}")
         finally:
-            self.stop()
+            await self.stop()
 
     # ------------------------------------------------------------------
     async def next_frame(self) -> Optional[str]:
@@ -68,20 +67,20 @@ class Wav2LipStreamer:
             return None
 
     # ------------------------------------------------------------------
-    def seek(self, _t: float):
+    async def seek(self, _t: float):
         """Restart the subprocess from the beginning (naïve seek)."""
-        self.stop()
+        await self.stop()
         self.queue = Queue(maxsize=2)
         asyncio.create_task(self.run())
 
     # ------------------------------------------------------------------
-    def stop(self):
+    async def stop(self):
         """Stop the subprocess safely."""
         if self.proc and self.proc.returncode is None:
             try:
                 self.proc.kill()
-                self.proc.wait(timeout=1)
-            except subprocess.TimeoutExpired:
+                await asyncio.wait_for(self.proc.wait(), timeout=1)
+            except asyncio.TimeoutError:
                 self.proc.terminate()
             finally:
                 self.proc = None
