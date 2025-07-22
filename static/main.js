@@ -11,14 +11,44 @@ frameImg.onload = () => ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.heigh
 
 function connectWS(uid) {
   const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${wsProtocol}://${location.host}/ws/avatar/${uid}`);
+  const wsUrl = `${wsProtocol}://${location.host}/ws/avatar/${uid}`;
+  console.log("Connecting WebSocket:", wsUrl);
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log("WebSocket connected.");
+  };
+
+  ws.onclose = () => {
+    console.warn("WebSocket connection closed.");
+  };
+
+  ws.onerror = (err) => {
+    console.error("WebSocket error:", err);
+  };
+
   ws.onmessage = e => {
     if (!e.data) return;
     frameImg.src = `data:image/jpeg;base64,${e.data}`;
   };
-  vid.onplay = () => ws.send(JSON.stringify({ action: "play" }));
-  vid.onpause = () => ws.send(JSON.stringify({ action: "pause" }));
-  vid.onseeked = () => ws.send(JSON.stringify({ action: "seek", t: vid.currentTime }));
+
+  vid.onplay = () => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: "play" }));
+    }
+  };
+
+  vid.onpause = () => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: "pause" }));
+    }
+  };
+
+  vid.onseeked = () => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: "seek", t: vid.currentTime }));
+    }
+  };
 }
 
 vid.ontimeupdate = () => {
@@ -38,20 +68,28 @@ document.getElementById("uploadBtn").onclick = async () => {
     return;
   }
 
+  console.log("Upload button clicked. Sending request...");
+
   const fd = new FormData();
   fd.append("video", v);
   fd.append("audio", a);
   fd.append("times", j);
 
-  // 👇👇 ADD THIS LOG TO CONFIRM BUTTON CLICK WORKS
-  console.log("Upload button clicked. Sending request...");
+  try {
+    const res = await fetch("/upload", { method: "POST", body: fd });
+    if (!res.ok) throw new Error("Upload failed");
+    const data = await res.json();
+    const uid = data.id;
 
-  const res = await fetch("/upload", { method: "POST", body: fd }).then(r => r.json());
-  const uid = res.id;
+    console.log("Upload complete. UID:", uid);
 
-  vid.src = `/uploads/${uid}_video.mp4`;
-  vid.load();
-  connectWS(uid);
+    timestamps = await j.text().then(JSON.parse);
+    vid.src = `/uploads/${uid}_video.mp4`;
+    vid.load();
 
-  timestamps = await j.text().then(JSON.parse);
+    connectWS(uid);
+  } catch (err) {
+    console.error("Upload or playback error:", err);
+    alert("Something went wrong. Check console for details.");
+  }
 };
