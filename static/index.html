@@ -1,25 +1,36 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <title>Avatar Class</title>
+  <meta charset="utf-8" />
+  <title>Avatar‑Synced Slides</title>
+  <style>
+    body{margin:0;font-family:sans-serif;background:#f4f6fa;}
+    #root{display:flex;flex-direction:column;height:100vh}
+    #playerRow{display:flex;flex:1}
+    #videoBox{flex:3;position:relative;background:black}
+    #avatarCanvas{position:absolute;bottom:10px;left:10px;width:180px;height:180px;border-radius:50%}
+    #slideInfo{position:absolute;top:10px;left:10px;padding:4px 8px;background:#000a;color:#fff;border-radius:4px;font-size:14px}
+    #controls{flex:1;padding:12px;border-left:1px solid #ccc;display:flex;flex-direction:column;gap:12px}
+    input[type=file]{border:1px solid #aaa;padding:4px;border-radius:4px}
+    button{padding:8px 12px;border:none;border-radius:4px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}
+  </style>
 </head>
 <body>
-  <h1>Upload Files</h1>
-  <form id="uploadForm">
-    Video: <input type="file" name="video" /><br />
-    Audio: <input type="file" name="audio" /><br />
-    Timestamps: <input type="file" name="timestamps" /><br />
-    <button type="submit">Upload</button>
-  </form>
-
-  <h2>Video + Avatar</h2>
-  <video id="slideVideo" width="480" controls muted>
-    <source src="/uploads/video.mp4" type="video/mp4" />
-  </video>
-  <video id="avatarVideo" width="480" autoplay muted loop>
-    <source src="/static/avatar.mp4" type="video/mp4" />
-  </video>
-
-  <script src="/static/main.js"></script>
+  <div id="root">
+    <div id="playerRow">
+      <div id="videoBox">
+        <video id="vid" width="100%" controls muted></video>
+        <canvas id="avatarCanvas"></canvas>
+        <div id="slideInfo">Slide 0</div>
+      </div>
+      <div id="controls">
+        <label>Slides video: <input id="videoFile" type="file" accept="video/mp4"/></label>
+        <label>Audio narration: <input id="audioFile" type="file" accept="audio/*"/></label>
+        <label>Timestamps JSON: <input id="timeFile" type="file" accept=".json"/></label>
+        <button id="uploadBtn">Upload & Start</button>
+      </div>
+    </div>
+  </div>
+  <script src="main.js"></script>
 </body>
 </html>
