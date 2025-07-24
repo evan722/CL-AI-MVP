@@ -1,4 +1,6 @@
+# Backend (FastAPI app)
 fastapi
-uvicorn
-replicate
-python-dotenv
+uvicorn[standard]
+aiofiles
+python-multipart
+requests
