@@ -7,7 +7,7 @@ let timestamps = [];
 let ws = null;
 let frameImg = new Image();
 
-// Draw avatar frame when loaded
+// Draw avatar when frame is received
 frameImg.onload = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
@@ -18,46 +18,20 @@ function connectWS(uid) {
   const wsUrl = `${wsProtocol}://${location.host}/ws/avatar/${uid}`;
   console.log("Connecting WebSocket:", wsUrl);
 
-  if (ws) {
-    ws.close();
-  }
-
+  if (ws) ws.close();
   ws = new WebSocket(wsUrl);
 
-  ws.onopen = () => {
-    console.log("✅ WebSocket connected.");
-  };
-
+  ws.onopen = () => console.log("✅ WebSocket connected.");
   ws.onmessage = e => {
     if (!e.data) return;
     frameImg.src = `data:image/jpeg;base64,${e.data}`;
   };
+  ws.onerror = err => console.error("WebSocket error:", err);
+  ws.onclose = () => console.warn("WebSocket connection closed.");
 
-  ws.onerror = err => {
-    console.error("WebSocket error:", err);
-  };
-
-  ws.onclose = () => {
-    console.warn("WebSocket connection closed.");
-  };
-
-  vid.onplay = () => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ action: "play" }));
-    }
-  };
-
-  vid.onpause = () => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ action: "pause" }));
-    }
-  };
-
-  vid.onseeked = () => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ action: "seek", t: vid.currentTime }));
-    }
-  };
+  vid.onplay = () => ws?.readyState === 1 && ws.send(JSON.stringify({ action: "play" }));
+  vid.onpause = () => ws?.readyState === 1 && ws.send(JSON.stringify({ action: "pause" }));
+  vid.onseeked = () => ws?.readyState === 1 && ws.send(JSON.stringify({ action: "seek", t: vid.currentTime }));
 }
 
 // Update slide info based on timestamp
@@ -69,14 +43,14 @@ vid.ontimeupdate = () => {
   slideInfo.textContent = `Slide ${idx + 1}`;
 };
 
-// Handle file upload and initialization
+// Handle upload
 document.getElementById("uploadBtn").onclick = async () => {
   const v = document.getElementById("videoFile").files[0];
   const a = document.getElementById("audioFile").files[0];
   const j = document.getElementById("timeFile").files[0];
 
   if (!v || !a || !j) {
-    alert("Please select all three files (video, audio, and timestamps).");
+    alert("Please select all three files.");
     return;
   }
 
@@ -85,28 +59,22 @@ document.getElementById("uploadBtn").onclick = async () => {
   fd.append("audio", a);
   fd.append("times", j);
 
-  console.log("📤 Upload button clicked. Sending request...");
-
+  console.log("📤 Upload button clicked.");
   try {
     const res = await fetch("/upload", { method: "POST", body: fd });
-    if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
     const data = await res.json();
-
     const uid = data.id;
-    console.log("✅ Upload complete. UID:", uid);
 
-    // Set video source
+    console.log("✅ Upload complete. UID:", uid);
     vid.src = `/uploads/${uid}_video.mp4`;
     vid.load();
 
-    // Connect WebSocket
     connectWS(uid);
 
-    // Load timestamps
     const jsonText = await j.text();
     timestamps = JSON.parse(jsonText);
   } catch (err) {
     console.error("❌ Upload failed:", err);
-    alert("Upload failed. Check the console for details.");
+    alert("Upload failed. See console.");
   }
 };
