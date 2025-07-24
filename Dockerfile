@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.0-cuda11.7-cudnn
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
 
 RUN apt update && apt install -y ffmpeg git curl
 
@@ -16,6 +16,5 @@ RUN pip install -r requirements.txt
 COPY app ./app
 COPY static ./static
 COPY uploads ./uploads
-COPY outputs ./outputs
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
