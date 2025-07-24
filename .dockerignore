@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.db
+venv/
+.env
+.git
+.gitignore
+uploads/
+node_modules/
+.DS_Store
+*.mp4
+*.wav
+*.json
