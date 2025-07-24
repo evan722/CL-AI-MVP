@@ -27,9 +27,6 @@ RUN pip install -r requirements.txt
 # Copy your FastAPI app and frontend files
 COPY app ./app
 COPY static ./static
-
-# Ensure uploads folder exists inside container
-RUN mkdir -p uploads
 COPY uploads ./uploads
 
 # Start FastAPI app using uvicorn
