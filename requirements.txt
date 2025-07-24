@@ -1,8 +1,4 @@
 fastapi
-uvicorn[standard]
-aiofiles
-python-multipart
-torch
-numpy
-opencv-python-headless
-tqdm
+uvicorn
+replicate
+python-dotenv
