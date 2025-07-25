@@ -1,4 +1,6 @@
-import asyncio, base64, subprocess
+import asyncio
+import base64
+import subprocess
 from asyncio import Queue
 
 class MuseTalkStreamer:
@@ -12,7 +14,8 @@ class MuseTalkStreamer:
         cmd = [
             "python3", "musetalk/scripts/realtime_inference.py",
             "--inference_config", "musetalk/configs/inference/realtime.yaml",
-            "--audio_clips", self.audio, "--avatar_id", "0"
+            "--audio_clips", self.audio,
+            "--avatar_id", "0"
         ]
         self.proc = await asyncio.create_subprocess_exec(*cmd, stdout=subprocess.PIPE)
         asyncio.create_task(self._read_frames())
@@ -30,3 +33,15 @@ class MuseTalkStreamer:
     def stop(self):
         if self.proc and self.proc.returncode is None:
             self.proc.kill()
+
+def run_musetalk(audio_path, face_img, output_path):
+    cmd = [
+        "python3", "musetalk/scripts/inference.py",
+        "--pose_style", "0",
+        "--audio_path", audio_path,
+        "--output_path", output_path,
+        "--input_image", face_img,
+        "--still", "True",
+        "--batch_size", "2"
+    ]
+    subprocess.run(cmd, check=True)
