@@ -10,6 +10,4 @@ venv/
 .gitignore
 node_modules/
 .DS_Store
-*.mp4
-*.wav
-*.json
+
