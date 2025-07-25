@@ -16,10 +16,10 @@ document.getElementById("uploadBtn").onclick = async () => {
   }
 
   const formData = new FormData();
-  formData.append("video", videoFile);   // match FastAPI: video
-  formData.append("audio", audioFile);   // match FastAPI: audio
-  formData.append("times", timeFile);    // match FastAPI: times
-  formData.append("face", faceFile);     // match FastAPI: face
+  formData.append("video", videoFile);         // ✅ matches FastAPI
+  formData.append("audio", audioFile);         // ✅ matches FastAPI
+  formData.append("timestamps", timeFile);     // ✅ FIXED: matches FastAPI
+  formData.append("face", faceFile);           // Optional, depending on backend
 
   try {
     const res = await fetch("/upload", {
