@@ -16,15 +16,27 @@ document.getElementById("uploadBtn").onclick = async () => {
   }
 
   const formData = new FormData();
-  formData.append("video", videoFile);   // must match FastAPI: video
-  formData.append("audio", audioFile);   // must match FastAPI: audio
-  formData.append("times", timeFile);    // must match FastAPI: times
-  formData.append("face", faceFile);     // must match FastAPI: face
+  formData.append("video", videoFile);   // match FastAPI: video
+  formData.append("audio", audioFile);   // match FastAPI: audio
+  formData.append("times", timeFile);    // match FastAPI: times
+  formData.append("face", faceFile);     // match FastAPI: face
 
   try {
-    const res = await fetch("/upload", { method: "POST", body: formData });
-    if (!res.ok) throw new Error("Upload failed");
+    const res = await fetch("/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Upload failed: ${res.status} - ${errorText}`);
+    }
+
     const data = await res.json();
+
+    if (!data.output_video) {
+      throw new Error("Server did not return output_video");
+    }
 
     const videoUrl = `/outputs/${data.output_video}`;
     outputVideo.src = videoUrl;
@@ -38,7 +50,7 @@ document.getElementById("uploadBtn").onclick = async () => {
   }
 };
 
-// Sync slide info
+// Sync slide info with timestamps
 outputVideo.ontimeupdate = () => {
   if (!timestamps.length) return;
   const t = outputVideo.currentTime;
