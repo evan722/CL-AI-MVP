@@ -11,13 +11,16 @@ class MuseTalkStreamer:
         self.proc = None
 
     async def start(self):
+        # Use the musetalk package as a module so imports work
         cmd = [
-            "python3", "musetalk/scripts/realtime_inference.py",
+            "python3", "-m", "musetalk.scripts.realtime_inference",
             "--inference_config", "musetalk/configs/inference/realtime.yaml",
             "--audio_clips", self.audio,
             "--avatar_id", "0"
         ]
-        self.proc = await asyncio.create_subprocess_exec(*cmd, stdout=subprocess.PIPE)
+        self.proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=subprocess.PIPE
+        )
         asyncio.create_task(self._read_frames())
 
     async def _read_frames(self):
@@ -40,8 +43,9 @@ class MuseTalkStreamer:
             self.proc.kill()
 
 def run_musetalk(audio_path, face_img, output_path):
+    # Run inference module via -m so that musetalk package is on PYTHONPATH
     cmd = [
-        "python3", "musetalk/scripts/inference.py",
+        "python3", "-m", "musetalk.scripts.inference",
         "--pose_style", "0",
         "--audio_path", audio_path,
         "--output_path", output_path,
