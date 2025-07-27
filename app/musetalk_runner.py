@@ -11,14 +11,18 @@ class MuseTalkStreamer:
         self.proc = None
 
     async def start(self):
-        # Use the musetalk package as a module so imports work
+        # Change to musetalk directory for proper module imports
+        import os
+        original_cwd = os.getcwd()
+        os.chdir("/app/musetalk")
+        
         cmd = [
             "python3", "-m", "musetalk.scripts.realtime_inference",
-            "--inference_config", "musetalk/configs/inference/realtime.yaml",
-            "--audio_clips", self.audio,
+            "--inference_config", "configs/inference/realtime.yaml",
+            "--audio_clips", os.path.join(original_cwd, self.audio),
             "--avatar_id", "0"
         ]
-        self.proc = await asyncio.create_subprocess_exec(*cmd, stdout=subprocess.PIPE)
+        self.proc = await asyncio.create_subprocess_exec(*cmd, stdout=subprocess.PIPE, cwd="/app/musetalk")
         asyncio.create_task(self._read_frames())
 
     async def _read_frames(self):
@@ -41,14 +45,20 @@ class MuseTalkStreamer:
             self.proc.kill()
 
 def run_musetalk(audio_path, face_img, output_path):
-    # Run inference module via -m so that musetalk package is on PYTHONPATH
-    cmd = [
-        "python3", "-m", "musetalk.scripts.inference",
-        "--pose_style", "0",
-        "--audio_path", audio_path,
-        "--output_path", output_path,
-        "--input_image", face_img,
-        "--still", "True",
-        "--batch_size", "2"
-    ]
-    subprocess.run(cmd, check=True)
+    # Change to musetalk directory and run inference script directly
+    import os
+    original_cwd = os.getcwd()
+    try:
+        os.chdir("/app/musetalk")
+        cmd = [
+            "python3", "-m", "musetalk.scripts.inference",
+            "--pose_style", "0",
+            "--audio_path", os.path.join(original_cwd, audio_path),
+            "--output_path", os.path.join(original_cwd, output_path),
+            "--input_image", os.path.join(original_cwd, face_img),
+            "--still", "True",
+            "--batch_size", "2"
+        ]
+        subprocess.run(cmd, check=True)
+    finally:
+        os.chdir(original_cwd)

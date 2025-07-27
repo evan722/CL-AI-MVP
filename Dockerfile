@@ -19,6 +19,9 @@ RUN pip install -r requirements.txt && \
     pip install openmim && \
     mim install mmengine mmcv mmdet mmpose whisper
 
+# Install MuseTalk as a package by adding the directory to PYTHONPATH
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+
 # Install your app dependencies
 WORKDIR /app
 COPY requirements.txt .
