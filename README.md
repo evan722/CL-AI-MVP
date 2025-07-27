@@ -12,3 +12,4 @@ cd avatar-slides
 git add .
 git commit -m "initial MVP"
 git push
+```
