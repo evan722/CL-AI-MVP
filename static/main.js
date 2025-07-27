@@ -1,4 +1,5 @@
 const outputVideo = document.getElementById("outputVideo");
+const slidesVideo = document.getElementById("slidesVideo");
 const slideInfo = document.getElementById("slideInfo");
 
 let timestamps = [];
@@ -19,7 +20,7 @@ document.getElementById("uploadBtn").onclick = async () => {
   formData.append("video", videoFile);         // ✅ matches FastAPI
   formData.append("audio", audioFile);         // ✅ matches FastAPI
   formData.append("timestamps", timeFile);     // ✅ FIXED: matches FastAPI
-  formData.append("face", faceFile);           // Optional, depending on backend
+  formData.append("face", faceFile);           // avatar image
 
   try {
     const res = await fetch("/upload", {
@@ -34,13 +35,14 @@ document.getElementById("uploadBtn").onclick = async () => {
 
     const data = await res.json();
 
-    if (!data.output_video) {
-      throw new Error("Server did not return output_video");
+    if (!data.output_video || !data.slides_video) {
+      throw new Error("Server did not return expected file paths");
     }
 
-    const videoUrl = `/outputs/${data.output_video}`;
-    outputVideo.src = videoUrl;
+    outputVideo.src = `/outputs/${data.output_video}`;
+    slidesVideo.src = `/uploads/${data.slides_video}`;
     outputVideo.load();
+    slidesVideo.load();
 
     const jsonText = await timeFile.text();
     timestamps = JSON.parse(jsonText);
@@ -50,10 +52,20 @@ document.getElementById("uploadBtn").onclick = async () => {
   }
 };
 
-// Sync slide info with timestamps
+// keep slides video in sync with avatar
+outputVideo.onplay = () => {
+  slidesVideo.currentTime = outputVideo.currentTime;
+  slidesVideo.play();
+};
+
+outputVideo.onpause = () => {
+  slidesVideo.pause();
+};
+
 outputVideo.ontimeupdate = () => {
-  if (!timestamps.length) return;
   const t = outputVideo.currentTime;
+  slidesVideo.currentTime = t;
+  if (!timestamps.length) return;
   let idx = timestamps.findIndex((_, i) => t < (timestamps[i + 1] || Infinity));
   if (idx === -1) idx = timestamps.length - 1;
   slideInfo.textContent = `Slide ${idx + 1}`;

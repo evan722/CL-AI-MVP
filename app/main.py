@@ -49,7 +49,8 @@ async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, f
 
     return {
         "id": uid,
-        "output_video": f"{uid}.mp4"
+        "output_video": f"{uid}.mp4",
+        "slides_video": f"{uid}_video.mp4"
     }
 
 @app.websocket("/ws/avatar/{uid}")
