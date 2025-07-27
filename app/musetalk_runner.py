@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import subprocess
+import os
 from asyncio import Queue
 
 class MuseTalkStreamer:
@@ -12,9 +13,12 @@ class MuseTalkStreamer:
 
     async def start(self):
         # Change to musetalk directory for proper module imports
-        import os
         original_cwd = os.getcwd()
-        os.chdir("/app/musetalk")
+        musetalk_dir = os.path.join(original_cwd, "musetalk")
+        
+        # Set PYTHONPATH to include the workspace root
+        env = os.environ.copy()
+        env['PYTHONPATH'] = f"{original_cwd}:{env.get('PYTHONPATH', '')}"
         
         cmd = [
             "python3", "-m", "musetalk.scripts.realtime_inference",
@@ -22,7 +26,12 @@ class MuseTalkStreamer:
             "--audio_clips", os.path.join(original_cwd, self.audio),
             "--avatar_id", "0"
         ]
-        self.proc = await asyncio.create_subprocess_exec(*cmd, stdout=subprocess.PIPE, cwd="/app/musetalk")
+        self.proc = await asyncio.create_subprocess_exec(
+            *cmd, 
+            stdout=subprocess.PIPE, 
+            cwd=musetalk_dir,
+            env=env
+        )
         asyncio.create_task(self._read_frames())
 
     async def _read_frames(self):
@@ -46,10 +55,14 @@ class MuseTalkStreamer:
 
 def run_musetalk(audio_path, face_img, output_path):
     # Change to musetalk directory and run inference script directly
-    import os
     original_cwd = os.getcwd()
+    musetalk_dir = os.path.join(original_cwd, "musetalk")
+    
     try:
-        os.chdir("/app/musetalk")
+        # Set PYTHONPATH to include the workspace root
+        env = os.environ.copy()
+        env['PYTHONPATH'] = f"{original_cwd}:{env.get('PYTHONPATH', '')}"
+        
         cmd = [
             "python3", "-m", "musetalk.scripts.inference",
             "--pose_style", "0",
@@ -59,6 +72,6 @@ def run_musetalk(audio_path, face_img, output_path):
             "--still", "True",
             "--batch_size", "2"
         ]
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True, cwd=musetalk_dir, env=env)
     finally:
-        os.chdir(original_cwd)
+        pass
