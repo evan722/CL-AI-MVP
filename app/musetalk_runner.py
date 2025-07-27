@@ -14,16 +14,25 @@ class MuseTalkStreamer:
     async def start(self):
         # Change to musetalk directory for proper module imports
         original_cwd = os.getcwd()
-        musetalk_dir = os.path.join(original_cwd, "musetalk")
+        
+        # Handle both Docker (/app) and local environments
+        if '/app' in original_cwd:
+            # In Docker, the structure is /app/...
+            musetalk_dir = '/app/musetalk'
+            workspace_dir = '/app'
+        else:
+            # Local development environment
+            musetalk_dir = os.path.join(original_cwd, "musetalk")
+            workspace_dir = original_cwd
         
         # Set PYTHONPATH to include the workspace root
         env = os.environ.copy()
-        env['PYTHONPATH'] = f"{original_cwd}:{env.get('PYTHONPATH', '')}"
+        env['PYTHONPATH'] = f"{workspace_dir}:{env.get('PYTHONPATH', '')}"
         
         cmd = [
             "python3", "-m", "musetalk.scripts.realtime_inference",
             "--inference_config", "configs/inference/realtime.yaml",
-            "--audio_clips", os.path.join(original_cwd, self.audio),
+            "--audio_clips", os.path.join(workspace_dir, self.audio),
             "--avatar_id", "0"
         ]
         self.proc = await asyncio.create_subprocess_exec(
@@ -56,19 +65,28 @@ class MuseTalkStreamer:
 def run_musetalk(audio_path, face_img, output_path):
     # Change to musetalk directory and run inference script directly
     original_cwd = os.getcwd()
-    musetalk_dir = os.path.join(original_cwd, "musetalk")
+    
+    # Handle both Docker (/app) and local environments
+    if '/app' in original_cwd:
+        # In Docker, the structure is /app/...
+        musetalk_dir = '/app/musetalk'
+        workspace_dir = '/app'
+    else:
+        # Local development environment
+        musetalk_dir = os.path.join(original_cwd, "musetalk")
+        workspace_dir = original_cwd
     
     try:
         # Set PYTHONPATH to include the workspace root
         env = os.environ.copy()
-        env['PYTHONPATH'] = f"{original_cwd}:{env.get('PYTHONPATH', '')}"
+        env['PYTHONPATH'] = f"{workspace_dir}:{env.get('PYTHONPATH', '')}"
         
         cmd = [
             "python3", "-m", "musetalk.scripts.inference",
             "--pose_style", "0",
-            "--audio_path", os.path.join(original_cwd, audio_path),
-            "--output_path", os.path.join(original_cwd, output_path),
-            "--input_image", os.path.join(original_cwd, face_img),
+            "--audio_path", os.path.join(workspace_dir, audio_path),
+            "--output_path", os.path.join(workspace_dir, output_path),
+            "--input_image", os.path.join(workspace_dir, face_img),
             "--still", "True",
             "--batch_size", "2"
         ]
