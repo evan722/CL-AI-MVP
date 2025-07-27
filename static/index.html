@@ -18,12 +18,12 @@
       display: flex;
       flex: 1;
     }
-    #videoBox {
-      flex: 3;
+    #slidesBox, #avatarBox {
+      flex: 1;
       position: relative;
       background: black;
     }
-    #outputVideo {
+    #slidesVideo, #outputVideo {
       width: 100%;
       height: 100%;
     }
@@ -64,9 +64,12 @@
 <body>
   <div id="root">
     <div id="playerRow">
-      <div id="videoBox">
-        <video id="outputVideo" controls></video>
+      <div id="slidesBox">
+        <video id="slidesVideo" muted controls></video>
         <div id="slideInfo">Slide 0</div>
+      </div>
+      <div id="avatarBox">
+        <video id="outputVideo" controls></video>
       </div>
       <div id="controls">
         <label>Slides video:
