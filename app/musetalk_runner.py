@@ -22,10 +22,15 @@ class MuseTalkStreamer:
 
     async def _read_frames(self):
         while True:
-            hdr = await self.proc.stdout.readexactly(4)
-            length = int.from_bytes(hdr, "big")
-            jpg = await self.proc.stdout.readexactly(length)
-            self.queue.put_nowait(base64.b64encode(jpg).decode())
+            try:
+                hdr = await self.proc.stdout.readexactly(4)
+                length = int.from_bytes(hdr, "big")
+                jpg = await self.proc.stdout.readexactly(length)
+                self.queue.put_nowait(base64.b64encode(jpg).decode())
+            except asyncio.IncompleteReadError:
+                break
+            except Exception:
+                break
 
     async def next_frame(self):
         return await asyncio.wait_for(self.queue.get(), timeout=0.1)
