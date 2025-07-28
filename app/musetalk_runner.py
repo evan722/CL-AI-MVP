@@ -39,6 +39,16 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
         Optional callback for queue updates produced by ``fal_client``.
     """
 
+    # Validate input files
+    if not os.path.exists(audio_path):
+        raise RuntimeError(f"Audio file not found: {audio_path}")
+    if not os.path.exists(source_media_path):
+        raise RuntimeError(f"Source media file not found: {source_media_path}")
+    
+    print(f"Input validation passed:")
+    print(f"  Audio file: {audio_path} ({os.path.getsize(audio_path)} bytes)")
+    print(f"  Source media: {source_media_path} ({os.path.getsize(source_media_path)} bytes)")
+
     # Upload input files to fal's temporary storage
     if not os.environ.get("FAL_KEY"):
         raise RuntimeError("FAL_KEY environment variable not set")
@@ -73,32 +83,54 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
 
     try:
         print(f"Calling fal.ai MuseTalk API with arguments: {api_arguments}")
+        print("Starting API call... This may take several minutes for video processing.")
+        
+        # Add a progress callback if none provided
+        def default_progress_update(update):
+            print(f"API Progress: {update}")
+        
+        progress_callback = on_update or default_progress_update
+        
         result = fal_client.subscribe(
             "fal-ai/musetalk",
             arguments=api_arguments,
-            with_logs=bool(on_update),
-            on_queue_update=on_update,
+            with_logs=True,  # Always enable logs for debugging
+            on_queue_update=progress_callback,
         )
         print(f"API call successful, result keys: {list(result.keys()) if result else 'None'}")
+        print(f"Full result: {result}")
     except FalClientError as exc:
         print(f"FalClientError details: {exc}")
+        print(f"FalClientError type: {type(exc)}")
         raise RuntimeError(f"MuseTalk API error: {exc}") from exc
     except Exception as exc:
         print(f"Unexpected error: {exc}")
+        print(f"Error type: {type(exc)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         raise RuntimeError(f"Unexpected error calling MuseTalk API: {exc}") from exc
 
 
     # Download the produced video
+    print("Processing API response...")
     video_info = result.get("video")
-    if not video_info or "url" not in video_info:
-        raise RuntimeError("Invalid response from MuseTalk API")
+    if not video_info:
+        print(f"No video info in result. Full result: {result}")
+        raise RuntimeError("No video information in API response")
+    
+    if "url" not in video_info:
+        print(f"No URL in video info. Video info: {video_info}")
+        raise RuntimeError("No video URL in API response")
 
-    resp = requests.get(video_info["url"], timeout=60)
+    print(f"Downloading video from: {video_info['url']}")
+    resp = requests.get(video_info["url"], timeout=120)  # Increased timeout
     resp.raise_for_status()
 
+    print(f"Downloaded {len(resp.content)} bytes")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "wb") as f:
         f.write(resp.content)
+    print(f"Video saved to: {output_path}")
 
 
 async def stream_musetalk(audio_path: str, source_media_path: str, output_path: Optional[str] = None):
