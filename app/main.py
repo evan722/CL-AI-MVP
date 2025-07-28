@@ -6,7 +6,13 @@ import uuid
 import os
 import asyncio
 
-from .musetalk_runner import run_musetalk, stream_musetalk
+# Import the runner either as a package or module so the app can be executed
+# both via ``uvicorn app.main:app`` and ``python app/main.py``/``streamlit run``
+try:
+    from .musetalk_runner import run_musetalk, stream_musetalk
+except ImportError:  # pragma: no cover - fallback for script execution
+    from musetalk_runner import run_musetalk, stream_musetalk
+
 
 app = FastAPI()
 
