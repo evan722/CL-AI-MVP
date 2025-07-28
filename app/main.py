@@ -1,4 +1,10 @@
-from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+)
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +20,7 @@ except Exception:
     # Script execution -- ensure this file's directory is on ``sys.path``
     import sys
     from pathlib import Path
+
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from musetalk_runner import run_musetalk, stream_musetalk  # type: ignore
@@ -58,9 +65,11 @@ async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, a
     # Generate avatar video in a thread so the event loop is not blocked
     output_path = os.path.join("outputs", f"{uid}.mp4")
     try:
-        await asyncio.to_thread(run_musetalk, paths["audio"], paths["avatar"], output_path)
+        await asyncio.to_thread(
+            run_musetalk, paths["audio"], paths["avatar"], output_path
+        )
     except Exception as exc:
-        return {"error": str(exc)}
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
     return {

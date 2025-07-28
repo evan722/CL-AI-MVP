@@ -20,7 +20,6 @@ real‑time preview if the model supports it.
    pip install -r requirements.txt
    ```
 2. Obtain an API key from [fal.ai](https://fal.ai) and set it as ``FAL_KEY``:
-
    ```bash
    export FAL_KEY=YOUR_API_KEY
    ```
@@ -28,6 +27,7 @@ real‑time preview if the model supports it.
    ```bash
    uvicorn app.main:app --host 0.0.0.0 --port 8080
    ```
+
 4. Visit `http://localhost:8080` to access the web interface.  Upload your
    files and either generate the final video or start the real-time stream.
 
