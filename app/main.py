@@ -18,7 +18,6 @@ except Exception:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from musetalk_runner import run_musetalk, stream_musetalk  # type: ignore
 
-
 app = FastAPI()
 
 # CORS for frontend access
@@ -56,9 +55,10 @@ async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, a
         with open(path, "wb") as f:
             f.write(await file.read())
 
-    # Generate avatar video
+    # Generate avatar video in a thread so the event loop is not blocked
     output_path = os.path.join("outputs", f"{uid}.mp4")
-    run_musetalk(paths["audio"], paths["avatar"], output_path)
+    await asyncio.to_thread(run_musetalk, paths["audio"], paths["avatar"], output_path)
+
 
     return {
         "id": uid,
@@ -85,7 +85,9 @@ async def ws_avatar(ws: WebSocket, uid: str):
         await ws.close()
         return
 
-    streamer = stream_musetalk(audio_path, avatar_path)
+    output_path = os.path.join("outputs", f"{uid}_stream.mp4")
+    streamer = stream_musetalk(audio_path, avatar_path, output_path)
+
 
     try:
         async for frame in streamer:

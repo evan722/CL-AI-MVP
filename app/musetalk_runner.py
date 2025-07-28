@@ -62,7 +62,8 @@ def run_musetalk(audio_path: str, source_video_path: str, output_path: str,
         f.write(resp.content)
 
 
-async def stream_musetalk(audio_path: str, source_video_path: str):
+async def stream_musetalk(audio_path: str, source_video_path: str, output_path: Optional[str] = None):
+
     """Stream MuseTalk frames via fal.ai realtime API.
 
     Yields base64-encoded JPEG frames as strings. Falls back to regular
@@ -70,9 +71,10 @@ async def stream_musetalk(audio_path: str, source_video_path: str):
     """
     if realtime is None:
         # Realtime not supported; run normal inference and yield the result once
-        tmp = os.path.join(os.path.dirname(audio_path), "_tmp.mp4")
+        tmp = output_path or os.path.join(os.path.dirname(audio_path), "_tmp.mp4")
         run_musetalk(audio_path, source_video_path, tmp)
-        yield f"RESULT::{tmp}"
+        yield f"RESULT::{os.path.basename(tmp)}"
+
         return
 
     audio_url = fal_client.upload_file(audio_path)
