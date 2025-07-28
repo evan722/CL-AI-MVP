@@ -14,6 +14,7 @@ import os
 import requests
 import fal_client
 from fal_client.client import FalClientError
+
 try:
     from fal_client import realtime
 except Exception:  # fallback if realtime submodule missing
@@ -21,6 +22,7 @@ except Exception:  # fallback if realtime submodule missing
 
 
 def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
+
                  on_update: Optional[Callable] = None) -> None:
     """Generate a talking-head video using the fal.ai MuseTalk API.
 
@@ -30,6 +32,7 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
         Local path to the narration audio.
     source_media_path: str
         Path to the avatar image or source video whose lips will be synced.
+
     output_path: str
         Where to save the resulting video file.
     on_update: Optional[Callable]
@@ -56,6 +59,7 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
     except FalClientError as exc:
         raise RuntimeError(f"MuseTalk API error: {exc}") from exc
 
+
     # Download the produced video
     video_info = result.get("video")
     if not video_info or "url" not in video_info:
@@ -70,6 +74,7 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
 
 
 async def stream_musetalk(audio_path: str, source_media_path: str, output_path: Optional[str] = None):
+
     """Stream MuseTalk frames via fal.ai realtime API.
 
     Yields base64-encoded JPEG frames as strings. Falls back to regular
@@ -91,6 +96,7 @@ async def stream_musetalk(audio_path: str, source_media_path: str, output_path: 
     session = await realtime.connect(
         "fal-ai/musetalk",
         arguments={media_key: media_url, "audio_url": audio_url},
+
     )
 
     async for event in session:

@@ -20,6 +20,7 @@ real‑time preview if the model supports it.
    pip install -r requirements.txt
    ```
 2. Obtain an API key from [fal.ai](https://fal.ai) and set it as ``FAL_KEY``:
+
    ```bash
    export FAL_KEY=YOUR_API_KEY
    ```
@@ -32,3 +33,4 @@ real‑time preview if the model supports it.
 
 All heavy computation happens on fal.ai.  No local models are required,
 but the ``FAL_KEY`` environment variable must be present.
+
