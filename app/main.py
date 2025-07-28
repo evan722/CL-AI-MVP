@@ -57,7 +57,10 @@ async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, a
 
     # Generate avatar video in a thread so the event loop is not blocked
     output_path = os.path.join("outputs", f"{uid}.mp4")
-    await asyncio.to_thread(run_musetalk, paths["audio"], paths["avatar"], output_path)
+    try:
+        await asyncio.to_thread(run_musetalk, paths["audio"], paths["avatar"], output_path)
+    except Exception as exc:
+        return {"error": str(exc)}
 
 
     return {

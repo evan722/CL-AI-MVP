@@ -6,7 +6,7 @@ This project shows how to integrate the [fal.ai](https://fal.ai) hosted
 * a **slides video**
 * the matching **audio narration**
 * a **timestamps.json** file for slide cues
-* an **avatar image or video**
+* an **avatar image or video** (JPG/PNG or MP4)
 
 The server forwards the audio and avatar to the remote API and returns a
 talking-head video.  The slides video and timestamps are used on the
@@ -19,7 +19,8 @@ real‑time preview if the model supports it.
    ```bash
    pip install -r requirements.txt
    ```
-2. Obtain an API key from [fal.ai](https://fal.ai) and set it:
+2. Obtain an API key from [fal.ai](https://fal.ai) and set it as ``FAL_KEY``:
+
    ```bash
    export FAL_KEY=YOUR_API_KEY
    ```
@@ -30,5 +31,6 @@ real‑time preview if the model supports it.
 4. Visit `http://localhost:8080` to access the web interface.  Upload your
    files and either generate the final video or start the real-time stream.
 
-All heavy computation happens on fal.ai.  No local models are
-required.
+All heavy computation happens on fal.ai.  No local models are required,
+but the ``FAL_KEY`` environment variable must be present.
+
