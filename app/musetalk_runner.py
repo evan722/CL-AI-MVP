@@ -65,8 +65,12 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
     print(f"Debug: source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
 
     # Ensure we're passing the correct parameters to the API
-    api_arguments = {"audio_url": audio_url}
-    api_arguments[media_key] = media_url
+    # MuseTalk API requires both source_video_url and source_image_url fields
+    api_arguments = {
+        "audio_url": audio_url,
+        "source_video_url": media_url if media_key == "source_video_url" else None,
+        "source_image_url": media_url if media_key == "source_image_url" else None
+    }
     
     print(f"Debug: API arguments={api_arguments}")
 
@@ -136,8 +140,12 @@ async def stream_musetalk(audio_path: str, source_media_path: str, output_path: 
     print(f"Debug (stream): source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
 
     # Ensure we're passing the correct parameters to the API
-    api_arguments = {"audio_url": audio_url}
-    api_arguments[media_key] = media_url
+    # MuseTalk API requires both source_video_url and source_image_url fields
+    api_arguments = {
+        "audio_url": audio_url,
+        "source_video_url": media_url if media_key == "source_video_url" else None,
+        "source_image_url": media_url if media_key == "source_image_url" else None
+    }
     
     print(f"Debug (stream): API arguments={api_arguments}")
 
