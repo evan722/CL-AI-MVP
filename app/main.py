@@ -2,9 +2,21 @@ from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import uuid, os, asyncio
+import uuid
+import os
+import asyncio
 
-from .musetalk_runner import MuseTalkStreamer, run_musetalk
+# Import the runner in a way that works for both ``uvicorn app.main:app`` and
+# ``streamlit run app/main.py`` execution modes.
+try:  # package style
+    from app.musetalk_runner import run_musetalk, stream_musetalk  # type: ignore
+except Exception:
+    # Script execution -- ensure this file's directory is on ``sys.path``
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from musetalk_runner import run_musetalk, stream_musetalk  # type: ignore
 
 app = FastAPI()
 
@@ -27,54 +39,64 @@ def index():
     return FileResponse("static/index.html")
 
 @app.post("/upload")
-async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, face: UploadFile):
+async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, avatar: UploadFile):
     uid = uuid.uuid4().hex
     os.makedirs("uploads", exist_ok=True)
     os.makedirs("outputs", exist_ok=True)
 
     # Save all uploaded files
     paths = {
-        "video": os.path.join("uploads", f"{uid}_video.mp4"),
+        "slides": os.path.join("uploads", f"{uid}_slides.mp4"),
         "audio": os.path.join("uploads", f"{uid}_audio.wav"),
         "timestamps": os.path.join("uploads", f"{uid}_timestamps.json"),
-        "face": os.path.join("uploads", f"{uid}_face.jpg")
+        "avatar": os.path.join("uploads", f"{uid}_avatar{os.path.splitext(avatar.filename)[1] or '.mp4'}"),
     }
-    for file, path in zip([video, audio, timestamps, face], paths.values()):
+    for file, path in zip([video, audio, timestamps, avatar], paths.values()):
         with open(path, "wb") as f:
             f.write(await file.read())
 
-    # Generate avatar video
+    # Generate avatar video in a thread so the event loop is not blocked
     output_path = os.path.join("outputs", f"{uid}.mp4")
-    run_musetalk(paths["audio"], paths["face"], output_path)
+    try:
+        await asyncio.to_thread(run_musetalk, paths["audio"], paths["avatar"], output_path)
+    except Exception as exc:
+        return {"error": str(exc)}
 
     return {
         "id": uid,
         "output_video": f"{uid}.mp4",
-        "slides_video": f"{uid}_video.mp4"
+        "slides_video": os.path.basename(paths["slides"]),
+        "timestamps": os.path.basename(paths["timestamps"])
     }
+
 
 @app.websocket("/ws/avatar/{uid}")
 async def ws_avatar(ws: WebSocket, uid: str):
     await ws.accept()
 
-    audio_path = f"uploads/{uid}_audio.wav"
-    face_img_path = f"uploads/{uid}_face.jpg"
+    audio_path = os.path.join("uploads", f"{uid}_audio.wav")
+    avatar_path = None
+    for ext in [".mp4", ".jpg", ".png"]:
+        p = os.path.join("uploads", f"{uid}_avatar{ext}")
+        if os.path.exists(p):
+            avatar_path = p
+            break
 
-    if not os.path.exists(audio_path):
-        await ws.send_text("ERROR: Audio file not found.")
+    if not avatar_path or not os.path.exists(audio_path):
+        await ws.send_text("ERROR: files missing")
         await ws.close()
         return
 
-    streamer = MuseTalkStreamer(audio_path=audio_path, face_img=face_img_path)
-    await streamer.start()
+    output_path = os.path.join("outputs", f"{uid}_stream.mp4")
+    streamer = stream_musetalk(audio_path, avatar_path, output_path)
 
     try:
-        while True:
-            await asyncio.sleep(0)
-            frame = await streamer.next_frame()
-            if frame:
-                await ws.send_text(frame)
+        async for frame in streamer:
+            await ws.send_text(frame)
     except WebSocketDisconnect:
-        print("WebSocket disconnected.")
+        pass
+    except Exception as exc:
+        await ws.send_text(f"ERROR: {exc}")
     finally:
-        streamer.stop()
+        if hasattr(streamer, "aclose"):
+            await streamer.aclose()
