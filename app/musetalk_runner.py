@@ -1,95 +1,91 @@
-import asyncio
-import base64
-import subprocess
+"""Wrapper around the fal.ai MuseTalk API.
+
+The previous codebase executed the MuseTalk model locally which required a
+heavy environment and large downloads.  This module replaces that behaviour by
+leveraging the hosted model available on `fal.ai`.  The ``run_musetalk``
+function uploads the required audio and video files, invokes the remote model
+and stores the resulting video in the given ``output_path``.
+"""
+
+from typing import Callable, Optional
+
 import os
-from asyncio import Queue
 
-class MuseTalkStreamer:
-    def __init__(self, audio_path, face_img):
-        self.audio = audio_path
-        self.face = face_img
-        self.queue = Queue()
-        self.proc = None
+import requests
+import fal_client
+try:
+    from fal_client import realtime
+except Exception:  # fallback if realtime submodule missing
+    realtime = None
 
-    async def start(self):
-        # Change to musetalk directory for proper module imports
-        original_cwd = os.getcwd()
-        
-        # Handle both Docker (/app) and local environments
-        if '/app' in original_cwd:
-            # In Docker, the structure is /app/...
-            musetalk_dir = '/app/musetalk'
-            workspace_dir = '/app'
-        else:
-            # Local development environment
-            musetalk_dir = os.path.join(original_cwd, "musetalk")
-            workspace_dir = original_cwd
-        
-        # Set PYTHONPATH to include the workspace root
-        env = os.environ.copy()
-        env['PYTHONPATH'] = f"{workspace_dir}:{env.get('PYTHONPATH', '')}"
-        
-        cmd = [
-            "python3", "-m", "musetalk.scripts.realtime_inference",
-            "--inference_config", "configs/inference/realtime.yaml",
-            "--audio_clips", os.path.join(workspace_dir, self.audio),
-            "--avatar_id", "0"
-        ]
-        self.proc = await asyncio.create_subprocess_exec(
-            *cmd, 
-            stdout=subprocess.PIPE, 
-            cwd=musetalk_dir,
-            env=env
-        )
-        asyncio.create_task(self._read_frames())
 
-    async def _read_frames(self):
-        while True:
-            try:
-                hdr = await self.proc.stdout.readexactly(4)
-                length = int.from_bytes(hdr, "big")
-                jpg = await self.proc.stdout.readexactly(length)
-                self.queue.put_nowait(base64.b64encode(jpg).decode())
-            except asyncio.IncompleteReadError:
-                break
-            except Exception:
-                break
+def run_musetalk(audio_path: str, source_video_path: str, output_path: str,
+                 on_update: Optional[Callable] = None) -> None:
+    """Generate a talking-head video using the fal.ai MuseTalk API.
 
-    async def next_frame(self):
-        return await asyncio.wait_for(self.queue.get(), timeout=0.1)
+    Parameters
+    ----------
+    audio_path: str
+        Local path to the narration audio.
+    source_video_path: str
+        Local path to the source video whose lips will be synced.
+    output_path: str
+        Where to save the resulting video file.
+    on_update: Optional[Callable]
+        Optional callback for queue updates produced by ``fal_client``.
+    """
 
-    def stop(self):
-        if self.proc and self.proc.returncode is None:
-            self.proc.kill()
+    # Upload input files to fal's temporary storage
+    audio_url = fal_client.upload_file(audio_path)
+    video_url = fal_client.upload_file(source_video_path)
 
-def run_musetalk(audio_path, face_img, output_path):
-    # Change to musetalk directory and run inference script directly
-    original_cwd = os.getcwd()
-    
-    # Handle both Docker (/app) and local environments
-    if '/app' in original_cwd:
-        # In Docker, the structure is /app/...
-        musetalk_dir = '/app/musetalk'
-        workspace_dir = '/app'
-    else:
-        # Local development environment
-        musetalk_dir = os.path.join(original_cwd, "musetalk")
-        workspace_dir = original_cwd
-    
-    try:
-        # Set PYTHONPATH to include the workspace root
-        env = os.environ.copy()
-        env['PYTHONPATH'] = f"{workspace_dir}:{env.get('PYTHONPATH', '')}"
-        
-        cmd = [
-            "python3", "-m", "musetalk.scripts.inference",
-            "--pose_style", "0",
-            "--audio_path", os.path.join(workspace_dir, audio_path),
-            "--output_path", os.path.join(workspace_dir, output_path),
-            "--input_image", os.path.join(workspace_dir, face_img),
-            "--still", "True",
-            "--batch_size", "2"
-        ]
-        subprocess.run(cmd, check=True, cwd=musetalk_dir, env=env)
-    finally:
-        pass
+    result = fal_client.subscribe(
+        "fal-ai/musetalk",
+        arguments={
+            "source_video_url": video_url,
+            "audio_url": audio_url,
+        },
+        with_logs=bool(on_update),
+        on_queue_update=on_update,
+    )
+
+    # Download the produced video
+    video_info = result.get("video")
+    if not video_info or "url" not in video_info:
+        raise RuntimeError("Invalid response from MuseTalk API")
+
+    resp = requests.get(video_info["url"], timeout=60)
+    resp.raise_for_status()
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "wb") as f:
+        f.write(resp.content)
+
+
+async def stream_musetalk(audio_path: str, source_video_path: str):
+    """Stream MuseTalk frames via fal.ai realtime API.
+
+    Yields base64-encoded JPEG frames as strings. Falls back to regular
+    generation if realtime is unavailable.
+    """
+    if realtime is None:
+        # Realtime not supported; run normal inference and yield the result once
+        tmp = os.path.join(os.path.dirname(audio_path), "_tmp.mp4")
+        run_musetalk(audio_path, source_video_path, tmp)
+        yield f"RESULT::{tmp}"
+        return
+
+    audio_url = fal_client.upload_file(audio_path)
+    video_url = fal_client.upload_file(source_video_path)
+
+    session = await realtime.connect(
+        "fal-ai/musetalk",
+        arguments={"source_video_url": video_url, "audio_url": audio_url},
+    )
+
+    async for event in session:
+        frame = event.get("frame") if isinstance(event, dict) else None
+        if frame:
+            yield frame
+    await session.aclose()
+

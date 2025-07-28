@@ -4,3 +4,4 @@ uvicorn[standard]
 aiofiles
 python-multipart
 requests
+fal-client
