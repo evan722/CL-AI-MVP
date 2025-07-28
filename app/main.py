@@ -13,6 +13,7 @@ try:
 except ImportError:  # pragma: no cover - fallback for script execution
     from musetalk_runner import run_musetalk, stream_musetalk
 
+
 app = FastAPI()
 
 # CORS for frontend access
