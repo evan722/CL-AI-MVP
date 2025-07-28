@@ -27,8 +27,10 @@ real‑time preview if the model supports it.
    ```bash
    uvicorn app.main:app --host 0.0.0.0 --port 8080
    ```
+
 4. Visit `http://localhost:8080` to access the web interface.  Upload your
    files and either generate the final video or start the real-time stream.
 
 All heavy computation happens on fal.ai.  No local models are required,
 but the ``FAL_KEY`` environment variable must be present.
+

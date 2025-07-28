@@ -33,6 +33,7 @@ document.getElementById('uploadBtn').onclick = async () => {
     if (data.error || data.detail) {
       throw new Error(data.error || data.detail);
     }
+
     if (!data.output_video || !data.slides_video) {
       throw new Error('Server did not return expected file paths');
     }
@@ -49,6 +50,7 @@ document.getElementById('uploadBtn').onclick = async () => {
   } catch (err) {
     console.error('Upload error:', err);
     alert('Failed to generate video: ' + (err.message || err));
+
   }
 };
 

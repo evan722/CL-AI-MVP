@@ -21,6 +21,7 @@ except Exception:
     import sys
     from pathlib import Path
 
+
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from musetalk_runner import run_musetalk, stream_musetalk  # type: ignore
 
@@ -70,6 +71,7 @@ async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, a
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
+
     return {
         "id": uid,
         "output_video": f"{uid}.mp4",
@@ -97,6 +99,7 @@ async def ws_avatar(ws: WebSocket, uid: str):
 
     output_path = os.path.join("outputs", f"{uid}_stream.mp4")
     streamer = stream_musetalk(audio_path, avatar_path, output_path)
+
 
     try:
         async for frame in streamer:
