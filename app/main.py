@@ -18,6 +18,7 @@ except Exception:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from musetalk_runner import run_musetalk, stream_musetalk  # type: ignore
 
+
 app = FastAPI()
 
 # CORS for frontend access
