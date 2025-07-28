@@ -43,21 +43,48 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
     if not os.environ.get("FAL_KEY"):
         raise RuntimeError("FAL_KEY environment variable not set")
 
+    print(f"Uploading audio file: {audio_path}")
     audio_url = fal_client.upload_file(audio_path)
+    print(f"Audio uploaded to: {audio_url}")
+    
+    print(f"Uploading media file: {source_media_path}")
     media_url = fal_client.upload_file(source_media_path)
+    print(f"Media uploaded to: {media_url}")
 
     ext = os.path.splitext(source_media_path)[1].lower()
+    # Handle cases where extension might be empty or missing
+    if not ext:
+        # Check if the file exists and try to determine type from content
+        if os.path.exists(source_media_path):
+            # Default to video if no extension found
+            ext = ".mp4"
+            print(f"Warning: No extension found for {source_media_path}, defaulting to .mp4")
+    
     media_key = "source_image_url" if ext in {".jpg", ".jpeg", ".png"} else "source_video_url"
+    
+    print(f"Debug: source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
+
+    # Ensure we're passing the correct parameters to the API
+    api_arguments = {"audio_url": audio_url}
+    api_arguments[media_key] = media_url
+    
+    print(f"Debug: API arguments={api_arguments}")
 
     try:
+        print(f"Calling fal.ai MuseTalk API with arguments: {api_arguments}")
         result = fal_client.subscribe(
             "fal-ai/musetalk",
-            arguments={media_key: media_url, "audio_url": audio_url},
+            arguments=api_arguments,
             with_logs=bool(on_update),
             on_queue_update=on_update,
         )
+        print(f"API call successful, result keys: {list(result.keys()) if result else 'None'}")
     except FalClientError as exc:
+        print(f"FalClientError details: {exc}")
         raise RuntimeError(f"MuseTalk API error: {exc}") from exc
+    except Exception as exc:
+        print(f"Unexpected error: {exc}")
+        raise RuntimeError(f"Unexpected error calling MuseTalk API: {exc}") from exc
 
 
     # Download the produced video
@@ -87,16 +114,36 @@ async def stream_musetalk(audio_path: str, source_media_path: str, output_path: 
         yield f"RESULT::{os.path.basename(tmp)}"
         return
 
+    print(f"Uploading audio file (stream): {audio_path}")
     audio_url = fal_client.upload_file(audio_path)
+    print(f"Audio uploaded to (stream): {audio_url}")
+    
+    print(f"Uploading media file (stream): {source_media_path}")
     media_url = fal_client.upload_file(source_media_path)
+    print(f"Media uploaded to (stream): {media_url}")
 
     ext = os.path.splitext(source_media_path)[1].lower()
+    # Handle cases where extension might be empty or missing
+    if not ext:
+        # Check if the file exists and try to determine type from content
+        if os.path.exists(source_media_path):
+            # Default to video if no extension found
+            ext = ".mp4"
+            print(f"Warning (stream): No extension found for {source_media_path}, defaulting to .mp4")
+    
     media_key = "source_image_url" if ext in {".jpg", ".jpeg", ".png"} else "source_video_url"
+    
+    print(f"Debug (stream): source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
+
+    # Ensure we're passing the correct parameters to the API
+    api_arguments = {"audio_url": audio_url}
+    api_arguments[media_key] = media_url
+    
+    print(f"Debug (stream): API arguments={api_arguments}")
 
     session = await realtime.connect(
         "fal-ai/musetalk",
-        arguments={media_key: media_url, "audio_url": audio_url},
-
+        arguments=api_arguments,
     )
 
     async for event in session:
