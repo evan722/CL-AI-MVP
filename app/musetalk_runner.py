@@ -45,9 +45,23 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
     if not os.path.exists(source_media_path):
         raise RuntimeError(f"Source media file not found: {source_media_path}")
     
+    # Check file sizes
+    audio_size = os.path.getsize(audio_path)
+    media_size = os.path.getsize(source_media_path)
+    
+    if audio_size == 0:
+        raise RuntimeError(f"Audio file is empty: {audio_path}")
+    if media_size == 0:
+        raise RuntimeError(f"Source media file is empty: {source_media_path}")
+    
     print(f"Input validation passed:")
-    print(f"  Audio file: {audio_path} ({os.path.getsize(audio_path)} bytes)")
-    print(f"  Source media: {source_media_path} ({os.path.getsize(source_media_path)} bytes)")
+    print(f"  Audio file: {audio_path} ({audio_size} bytes)")
+    print(f"  Source media: {source_media_path} ({media_size} bytes)")
+    
+    # Check file extensions
+    audio_ext = os.path.splitext(audio_path)[1].lower()
+    if audio_ext not in ['.wav', '.mp3', '.m4a', '.aac']:
+        print(f"Warning: Audio file has unusual extension: {audio_ext}")
 
     # Upload input files to fal's temporary storage
     if not os.environ.get("FAL_KEY"):
@@ -103,10 +117,21 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
         )
         print(f"API call successful, result keys: {list(result.keys()) if result else 'None'}")
         print(f"Full result: {result}")
+        print(f"Result type: {type(result)}")
         
         # Check if result is None or empty
         if not result:
             raise RuntimeError("API returned empty result")
+        
+        # Additional debugging for the result
+        if isinstance(result, dict):
+            for key, value in result.items():
+                print(f"Result key '{key}': {type(value)} = {value}")
+        else:
+            print(f"Result is not a dict, it's a {type(result)}")
+            print(f"Result dir: {dir(result)}")
+            if hasattr(result, '__dict__'):
+                print(f"Result __dict__: {result.__dict__}")
             
     except FalClientError as exc:
         print(f"FalClientError details: {exc}")
@@ -114,8 +139,20 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
         # Try to get more details about the error
         if hasattr(exc, 'response'):
             print(f"Error response: {exc.response}")
+            if hasattr(exc.response, 'text'):
+                print(f"Error response text: {exc.response.text}")
         if hasattr(exc, 'status_code'):
             print(f"Error status code: {exc.status_code}")
+        if hasattr(exc, 'args'):
+            print(f"Error args: {exc.args}")
+        # Try to get the full error details
+        try:
+            import json
+            if hasattr(exc, 'response') and hasattr(exc.response, 'json'):
+                error_json = exc.response.json()
+                print(f"Error JSON: {json.dumps(error_json, indent=2)}")
+        except:
+            pass
         raise RuntimeError(f"MuseTalk API error: {exc}") from exc
     except Exception as exc:
         print(f"Unexpected error: {exc}")
