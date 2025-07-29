@@ -75,12 +75,17 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
     print(f"Debug: source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
 
     # Ensure we're passing the correct parameters to the API
-    # MuseTalk API seems to require both fields to be present
-    api_arguments = {
-        "audio_url": audio_url,
-        "source_video_url": media_url if media_key == "source_video_url" else "",
-        "source_image_url": media_url if media_key == "source_image_url" else ""
-    }
+    # Try different parameter structures based on media type
+    if media_key == "source_video_url":
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_video_url": media_url
+        }
+    else:
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_image_url": media_url
+        }
     
     print(f"Debug: API arguments={api_arguments}")
 
@@ -102,9 +107,19 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
         )
         print(f"API call successful, result keys: {list(result.keys()) if result else 'None'}")
         print(f"Full result: {result}")
+        
+        # Check if result is None or empty
+        if not result:
+            raise RuntimeError("API returned empty result")
+            
     except FalClientError as exc:
         print(f"FalClientError details: {exc}")
         print(f"FalClientError type: {type(exc)}")
+        # Try to get more details about the error
+        if hasattr(exc, 'response'):
+            print(f"Error response: {exc.response}")
+        if hasattr(exc, 'status_code'):
+            print(f"Error status code: {exc.status_code}")
         raise RuntimeError(f"MuseTalk API error: {exc}") from exc
     except Exception as exc:
         print(f"Unexpected error: {exc}")
@@ -116,20 +131,41 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
 
     # Download the produced video
     print("Processing API response...")
-    video_info = result.get("video")
+    print(f"Result type: {type(result)}")
+    print(f"Result content: {result}")
+    
+    # Handle different possible response formats
+    video_info = None
+    if isinstance(result, dict):
+        video_info = result.get("video")
+    elif hasattr(result, 'get'):
+        video_info = result.get("video")
+    else:
+        print(f"Unexpected result type: {type(result)}")
+        raise RuntimeError(f"Unexpected result type from API: {type(result)}")
+    
     if not video_info:
         print(f"No video info in result. Full result: {result}")
+        print(f"Available keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
         raise RuntimeError("No video information in API response")
     
     if "url" not in video_info:
         print(f"No URL in video info. Video info: {video_info}")
+        print(f"Video info keys: {list(video_info.keys()) if isinstance(video_info, dict) else 'Not a dict'}")
         raise RuntimeError("No video URL in API response")
 
     print(f"Downloading video from: {video_info['url']}")
-    resp = requests.get(video_info["url"], timeout=120)  # Increased timeout
-    resp.raise_for_status()
+    try:
+        resp = requests.get(video_info["url"], timeout=120)  # Increased timeout
+        resp.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to download video: {e}")
+        raise RuntimeError(f"Failed to download video: {e}")
 
     print(f"Downloaded {len(resp.content)} bytes")
+    if len(resp.content) == 0:
+        raise RuntimeError("Downloaded video is empty")
+    
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "wb") as f:
         f.write(resp.content)
@@ -172,12 +208,17 @@ async def stream_musetalk(audio_path: str, source_media_path: str, output_path: 
     print(f"Debug (stream): source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
 
     # Ensure we're passing the correct parameters to the API
-    # MuseTalk API seems to require both fields to be present
-    api_arguments = {
-        "audio_url": audio_url,
-        "source_video_url": media_url if media_key == "source_video_url" else "",
-        "source_image_url": media_url if media_key == "source_image_url" else ""
-    }
+    # Try different parameter structures based on media type
+    if media_key == "source_video_url":
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_video_url": media_url
+        }
+    else:
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_image_url": media_url
+        }
     
     print(f"Debug (stream): API arguments={api_arguments}")
 
