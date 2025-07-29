@@ -89,15 +89,22 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
     print(f"Debug: source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
 
     # Ensure we're passing the correct parameters to the API
-    # MuseTalk API requires both source_video_url and source_image_url fields
-    # Use empty string instead of None to avoid validation errors
-    api_arguments = {
-        "audio_url": audio_url,
-        "source_video_url": media_url if media_key == "source_video_url" else "",
-        "source_image_url": media_url if media_key == "source_image_url" else ""
-    }
+    # Try different parameter structures
+    if media_key == "source_video_url":
+        # For video input, only include source_video_url
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_video_url": media_url
+        }
+    else:
+        # For image input, only include source_image_url
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_image_url": media_url
+        }
     
     print(f"Debug: API arguments={api_arguments}")
+    print(f"Debug: Using media key: {media_key}")
 
     try:
         print(f"Calling fal.ai MuseTalk API with arguments: {api_arguments}")
@@ -109,12 +116,28 @@ def run_musetalk(audio_path: str, source_media_path: str, output_path: str,
         
         progress_callback = on_update or default_progress_update
         
-        result = fal_client.subscribe(
-            "fal-ai/musetalk",
-            arguments=api_arguments,
-            with_logs=True,  # Always enable logs for debugging
-            on_queue_update=progress_callback,
-        )
+        # Try different API endpoint variations
+        try:
+            result = fal_client.subscribe(
+                "fal-ai/musetalk",
+                arguments=api_arguments,
+                with_logs=True,  # Always enable logs for debugging
+                on_queue_update=progress_callback,
+            )
+        except FalClientError as endpoint_error:
+            print(f"First endpoint failed: {endpoint_error}")
+            # Try alternative endpoint
+            try:
+                result = fal_client.subscribe(
+                    "110602490/musetalk",
+                    arguments=api_arguments,
+                    with_logs=True,
+                    on_queue_update=progress_callback,
+                )
+                print("Using alternative endpoint: 110602490/musetalk")
+            except FalClientError as alt_error:
+                print(f"Alternative endpoint also failed: {alt_error}")
+                raise endpoint_error  # Re-raise the original error
         print(f"API call successful, result keys: {list(result.keys()) if result else 'None'}")
         print(f"Full result: {result}")
         print(f"Result type: {type(result)}")
@@ -241,15 +264,22 @@ async def stream_musetalk(audio_path: str, source_media_path: str, output_path: 
     print(f"Debug (stream): source_media_path={source_media_path}, ext={ext}, media_key={media_key}")
 
     # Ensure we're passing the correct parameters to the API
-    # MuseTalk API requires both source_video_url and source_image_url fields
-    # Use empty string instead of None to avoid validation errors
-    api_arguments = {
-        "audio_url": audio_url,
-        "source_video_url": media_url if media_key == "source_video_url" else "",
-        "source_image_url": media_url if media_key == "source_image_url" else ""
-    }
+    # Try different parameter structures
+    if media_key == "source_video_url":
+        # For video input, only include source_video_url
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_video_url": media_url
+        }
+    else:
+        # For image input, only include source_image_url
+        api_arguments = {
+            "audio_url": audio_url,
+            "source_image_url": media_url
+        }
     
     print(f"Debug (stream): API arguments={api_arguments}")
+    print(f"Debug (stream): Using media key: {media_key}")
 
     session = await realtime.connect(
         "fal-ai/musetalk",
