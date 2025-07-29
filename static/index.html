@@ -59,6 +59,11 @@
       font-weight: 600;
       cursor: pointer;
     }
+    #playbackControls {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -87,6 +92,11 @@
         </label>
         <button id="uploadBtn">Upload & Generate Avatar</button>
         <button id="streamBtn">Start Real-Time</button>
+        <div id="playbackControls">
+          <button id="backBtn">&#9664;&#9664; 5s</button>
+          <button id="playPauseBtn">Play</button>
+          <button id="forwardBtn">5s &#9654;&#9654;</button>
+        </div>
       </div>
     </div>
   </div>
