@@ -2,9 +2,33 @@ const outputVideo = document.getElementById('outputVideo');
 const slidesVideo = document.getElementById('slidesVideo');
 const slideInfo = document.getElementById('slideInfo');
 const avatarFrame = document.getElementById('avatarFrame');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const backBtn = document.getElementById('backBtn');
+const forwardBtn = document.getElementById('forwardBtn');
 
 let timestamps = [];
 let currentId = null;
+
+playPauseBtn.onclick = () => {
+  if (outputVideo.paused) {
+    outputVideo.play();
+  } else {
+    outputVideo.pause();
+  }
+};
+
+backBtn.onclick = () => {
+  const newTime = Math.max(0, outputVideo.currentTime - 5);
+  outputVideo.currentTime = newTime;
+  slidesVideo.currentTime = newTime;
+};
+
+forwardBtn.onclick = () => {
+  const dur = isNaN(outputVideo.duration) ? Infinity : outputVideo.duration;
+  const newTime = Math.min(dur, outputVideo.currentTime + 5);
+  outputVideo.currentTime = newTime;
+  slidesVideo.currentTime = newTime;
+};
 
 document.getElementById('uploadBtn').onclick = async () => {
   const videoFile = document.getElementById('videoFile').files[0];
@@ -57,10 +81,12 @@ document.getElementById('uploadBtn').onclick = async () => {
 outputVideo.onplay = () => {
   slidesVideo.currentTime = outputVideo.currentTime;
   slidesVideo.play();
+  playPauseBtn.textContent = 'Pause';
 };
 
 outputVideo.onpause = () => {
   slidesVideo.pause();
+  playPauseBtn.textContent = 'Play';
 };
 
 outputVideo.ontimeupdate = () => {
