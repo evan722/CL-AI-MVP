@@ -12,6 +12,9 @@ import uuid
 import os
 import asyncio
 
+import openai
+from gtts import gTTS
+from pydantic import BaseModel
 # Import the runner in a way that works for both ``uvicorn app.main:app`` and
 # ``streamlit run app/main.py`` execution modes.
 try:  # package style
@@ -111,3 +114,54 @@ async def ws_avatar(ws: WebSocket, uid: str):
     finally:
         if hasattr(streamer, "aclose"):
             await streamer.aclose()
+
+
+class ChatRequest(BaseModel):
+    uid: str
+    question: str
+    slide_index: int
+    slide_text: str | None = None
+
+
+@app.post("/chat")
+async def chat(req: ChatRequest):
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set")
+    client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    prompt = f"You are helping a student. They are currently on slide {req.slide_index}. Slide text: {req.slide_text or ''}. Question: {req.question}"
+
+    try:
+        completion = await asyncio.to_thread(
+            client.chat.completions.create,
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        answer = completion.choices[0].message.content.strip()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"LLM error: {exc}")
+
+    try:
+        tts = gTTS(answer)
+        audio_path = os.path.join("uploads", f"{req.uid}_qa.mp3")
+        tts.save(audio_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"TTS error: {exc}")
+
+    avatar_path = None
+    for ext in [".mp4", ".jpg", ".png"]:
+        p = os.path.join("uploads", f"{req.uid}_avatar{ext}")
+        if os.path.exists(p):
+            avatar_path = p
+            break
+    if not avatar_path:
+        raise HTTPException(status_code=404, detail="Avatar not found")
+
+    output_name = f"{req.uid}_qa_{uuid.uuid4().hex}.mp4"
+    output_path = os.path.join("outputs", output_name)
+    try:
+        await asyncio.to_thread(run_musetalk, audio_path, avatar_path, output_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"MuseTalk error: {exc}")
+
+    return {"answer": answer, "video": output_name}

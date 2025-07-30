@@ -5,6 +5,10 @@ const avatarFrame = document.getElementById('avatarFrame');
 const playPauseBtn = document.getElementById('playPauseBtn');
 const backBtn = document.getElementById('backBtn');
 const forwardBtn = document.getElementById('forwardBtn');
+const chatInput = document.getElementById('chatInput');
+const chatBtn = document.getElementById('chatBtn');
+const chatAnswer = document.getElementById('chatAnswer');
+const chatVideo = document.getElementById('chatVideo');
 
 let timestamps = [];
 let currentId = null;
@@ -118,4 +122,49 @@ document.getElementById('streamBtn').onclick = () => {
     }
   };
   ws.onclose = () => console.log('stream closed');
+};
+
+chatBtn.onclick = async () => {
+  if (!currentId) {
+    alert('Upload files first.');
+    return;
+  }
+  const question = chatInput.value.trim();
+  if (!question) return;
+
+  outputVideo.pause();
+  slidesVideo.pause();
+
+  const t = outputVideo.currentTime;
+  let idx = timestamps.findIndex((_, i) => t < (timestamps[i + 1] || Infinity));
+  if (idx === -1) idx = timestamps.length - 1;
+  const slideText = (timestamps[idx] && timestamps[idx].text) ? timestamps[idx].text : '';
+
+  const payload = {
+    uid: currentId,
+    question: question,
+    slide_index: idx + 1,
+    slide_text: slideText
+  };
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    chatAnswer.textContent = data.answer;
+    chatVideo.src = `/outputs/${data.video}`;
+    chatVideo.style.display = 'block';
+    chatVideo.play();
+    chatVideo.onended = () => {
+      chatVideo.style.display = 'none';
+      outputVideo.play();
+    };
+  } catch (err) {
+    alert('Chat failed: ' + err.message);
+    outputVideo.play();
+  }
 };
