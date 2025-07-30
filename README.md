@@ -34,3 +34,18 @@ real‑time preview if the model supports it.
 All heavy computation happens on fal.ai.  No local models are required,
 but the ``FAL_KEY`` environment variable must be present.
 
+## GPT Chat Feature
+
+The application now includes an optional chatbot that answers questions about
+the current slide. To enable it, obtain an OpenAI API key and set
+``OPENAI_API_KEY`` before starting the server:
+
+```bash
+export OPENAI_API_KEY=your_openai_key
+```
+
+While playing the lesson, pause and type a question in the textbox. The backend
+will query GPT, synthesise audio using ``gTTS`` and generate a short video of
+the avatar speaking the answer. After playback finishes, the lesson resumes
+automatically.
+
