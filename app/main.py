@@ -129,6 +129,7 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set")
     client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+
     prompt = f"You are helping a student. They are currently on slide {req.slide_index}. Slide text: {req.slide_text or ''}. Question: {req.question}"
 
     try:
@@ -138,6 +139,7 @@ async def chat(req: ChatRequest):
             messages=[{"role": "user", "content": prompt}],
         )
         answer = completion.choices[0].message.content.strip()
+
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"LLM error: {exc}")
 
