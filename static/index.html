@@ -23,7 +23,7 @@
       position: relative;
       background: black;
     }
-    #slidesVideo, #outputVideo {
+    #slidesVideo, #outputVideo, #chatVideo {
       width: 100%;
       height: 100%;
     }
@@ -76,6 +76,7 @@
       <div id="avatarBox">
         <img id="avatarFrame" style="width:100%;height:100%;object-fit:contain"/>
         <video id="outputVideo" style="display:none" controls></video>
+        <video id="chatVideo" style="display:none" controls></video>
       </div>
       <div id="controls">
         <label>Slides video:
@@ -100,7 +101,6 @@
         <textarea id="chatInput" rows="3" placeholder="Ask a question..."></textarea>
         <button id="chatBtn">Ask GPT</button>
         <div id="chatAnswer"></div>
-        <video id="chatVideo" style="display:none" controls></video>
       </div>
     </div>
   </div>

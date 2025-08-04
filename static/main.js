@@ -125,12 +125,15 @@ document.getElementById('streamBtn').onclick = () => {
 };
 
 chatBtn.onclick = async () => {
-  if (!currentId) {
-    alert('Upload files first.');
+  if (!currentId || chatBtn.disabled) {
+    if (!currentId) alert('Upload files first.');
     return;
   }
   const question = chatInput.value.trim();
   if (!question) return;
+
+  chatBtn.disabled = true;
+  chatInput.value = '';
 
   outputVideo.pause();
   slidesVideo.pause();
@@ -156,15 +159,20 @@ chatBtn.onclick = async () => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error');
     chatAnswer.textContent = data.answer;
+    outputVideo.style.display = 'none';
     chatVideo.src = `/outputs/${data.video}`;
     chatVideo.style.display = 'block';
     chatVideo.play();
     chatVideo.onended = () => {
       chatVideo.style.display = 'none';
+      outputVideo.style.display = 'block';
       outputVideo.play();
+      chatBtn.disabled = false;
     };
   } catch (err) {
     alert('Chat failed: ' + err.message);
+    outputVideo.style.display = 'block';
     outputVideo.play();
+    chatBtn.disabled = false;
   }
 };
