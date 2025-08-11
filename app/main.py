@@ -57,6 +57,9 @@ DEFAULT_ID = "default"
 def _prepare_default_class() -> None:
     """Copy demo assets into place and pre-generate the default avatar."""
 
+    if not os.environ.get("ENABLE_DEFAULT_ASSETS"):
+        return
+
     os.makedirs("uploads", exist_ok=True)
     os.makedirs("outputs", exist_ok=True)
 
@@ -142,7 +145,7 @@ def _prepare_default_class() -> None:
 
 
     output_path = os.path.join("outputs", f"{DEFAULT_ID}.mp4")
-    if not os.path.exists(output_path):
+    if os.environ.get("FAL_KEY") and not os.path.exists(output_path):
         try:
             run_musetalk(dst_audio, dst_avatar, output_path)
         except Exception as exc:  # best-effort
@@ -152,6 +155,10 @@ def _prepare_default_class() -> None:
 # Prepare default assets in the background so startup is quick
 @app.on_event("startup")
 async def _schedule_default_class() -> None:
+    if not os.environ.get("ENABLE_DEFAULT_ASSETS"):
+        return
+
+
     async def prepare() -> None:
         try:
             await asyncio.to_thread(_prepare_default_class)
