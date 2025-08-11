@@ -158,6 +158,7 @@ async def _schedule_default_class() -> None:
     if not os.environ.get("ENABLE_DEFAULT_ASSETS"):
         return
 
+
     async def prepare() -> None:
         try:
             await asyncio.to_thread(_prepare_default_class)
