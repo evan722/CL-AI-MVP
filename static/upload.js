@@ -1,18 +1,21 @@
 const status = document.getElementById('status');
 
 document.getElementById('uploadBtn').onclick = async () => {
-  const videoFile = document.getElementById('videoFile').files[0];
+  const slidesId = document.getElementById('slidesId').value.trim();
+
   const audioFile = document.getElementById('audioFile').files[0];
   const timeFile = document.getElementById('timeFile').files[0];
   const avatarFile = document.getElementById('avatarFile').files[0];
 
-  if (!videoFile || !audioFile || !timeFile || !avatarFile) {
-    alert('Please select slides, audio, timestamps and avatar files.');
+  if (!slidesId || !audioFile || !timeFile || !avatarFile) {
+    alert('Please provide slides ID, audio, timestamps and avatar files.');
+
     return;
   }
 
   const formData = new FormData();
-  formData.append('video', videoFile);
+  formData.append('slides_id', slidesId);
+
   formData.append('audio', audioFile);
   formData.append('timestamps', timeFile);
   formData.append('avatar', avatarFile);

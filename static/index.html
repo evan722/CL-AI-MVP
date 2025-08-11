@@ -28,14 +28,22 @@
       padding: 10px;
       gap: 10px;
     }
-    #slidesBox, #avatarBox {
+    #slidesBox {
+      flex: 2;
+      position: relative;
+      background: #2e7d32;
+      border: 8px solid #bfa27a;
+      border-radius: 8px;
+    }
+    #avatarBox {
       flex: 1;
       position: relative;
       background: #2e7d32;
       border: 8px solid #bfa27a;
       border-radius: 8px;
     }
-    #slidesVideo, #outputVideo, #chatVideo, #avatarFrame {
+    #slideImg, #outputVideo, #chatVideo, #avatarFrame {
+
       width: 100%;
       height: 100%;
     }
@@ -68,7 +76,7 @@
       font-weight: 600;
       cursor: pointer;
     }
-    #playbackControls {
+    #navControls {
       display: flex;
       gap: 8px;
       margin-top: 8px;
@@ -83,7 +91,7 @@
   <div id="root">
     <div id="playerRow">
       <div id="slidesBox">
-        <video id="slidesVideo" muted controls></video>
+        <img id="slideImg" alt="Slide"/>
         <div id="slideInfo">Slide 0</div>
       </div>
       <div id="avatarBox">
@@ -92,11 +100,11 @@
         <video id="chatVideo" style="display:none" controls></video>
       </div>
       <div id="controls">
+        <div id="navControls">
+          <button id="prevSlide">Prev Slide</button>
+          <button id="nextSlide">Next Slide</button>
 
-        <div id="playbackControls">
-          <button id="backBtn">&#9664;&#9664; 5s</button>
           <button id="playPauseBtn">Play</button>
-          <button id="forwardBtn">5s &#9654;&#9654;</button>
         </div>
         <textarea id="chatInput" rows="3" placeholder="Ask a question..."></textarea>
         <button id="chatBtn">Ask GPT</button>

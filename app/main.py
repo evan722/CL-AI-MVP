@@ -4,6 +4,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
     HTTPException,
+    Form,
 )
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -57,21 +58,21 @@ def _prepare_default_class() -> None:
     os.makedirs("outputs", exist_ok=True)
 
     src_dir = "inputs"
-    src_video = os.path.join(src_dir, "video.mp4")
     src_audio = os.path.join(src_dir, "audio.wav")
     src_ts = os.path.join(src_dir, "timestamps.json")
     src_avatar = os.path.join(src_dir, "avatar1.mp4")
-
-    dst_video = os.path.join("uploads", f"{DEFAULT_ID}_slides.mp4")
+    src_slides_id = os.path.join(src_dir, "slides_id.txt")
     dst_audio = os.path.join("uploads", f"{DEFAULT_ID}_audio.wav")
     dst_ts = os.path.join("uploads", f"{DEFAULT_ID}_timestamps.json")
     dst_avatar = os.path.join("uploads", f"{DEFAULT_ID}_avatar.mp4")
+    dst_slides_id = os.path.join("uploads", f"{DEFAULT_ID}_slides_id.txt")
 
     try:
-        shutil.copyfile(src_video, dst_video)
         shutil.copyfile(src_audio, dst_audio)
         shutil.copyfile(src_ts, dst_ts)
         shutil.copyfile(src_avatar, dst_avatar)
+        shutil.copyfile(src_slides_id, dst_slides_id)
+
     except FileNotFoundError:
         # If any demo asset is missing, simply skip generation
         return
@@ -96,21 +97,29 @@ def upload_page():
     return FileResponse("static/upload.html")
 
 @app.post("/upload")
-async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, avatar: UploadFile):
+async def upload(
+    audio: UploadFile,
+    timestamps: UploadFile,
+    avatar: UploadFile,
+    slides_id: str = Form(...),
+):
     uid = uuid.uuid4().hex
     os.makedirs("uploads", exist_ok=True)
     os.makedirs("outputs", exist_ok=True)
 
     # Save all uploaded files
     paths = {
-        "slides": os.path.join("uploads", f"{uid}_slides.mp4"),
         "audio": os.path.join("uploads", f"{uid}_audio.wav"),
         "timestamps": os.path.join("uploads", f"{uid}_timestamps.json"),
         "avatar": os.path.join("uploads", f"{uid}_avatar{os.path.splitext(avatar.filename)[1] or '.mp4'}"),
     }
-    for file, path in zip([video, audio, timestamps, avatar], paths.values()):
+    for file, path in zip([audio, timestamps, avatar], paths.values()):
         with open(path, "wb") as f:
             f.write(await file.read())
+
+    # Save slides presentation id
+    with open(os.path.join("uploads", f"{uid}_slides_id.txt"), "w") as f:
+        f.write(slides_id.strip())
 
     # Generate avatar video in a thread so the event loop is not blocked
     output_path = os.path.join("outputs", f"{uid}.mp4")
@@ -125,8 +134,7 @@ async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, a
     return {
         "id": uid,
         "output_video": f"{uid}.mp4",
-        "slides_video": os.path.basename(paths["slides"]),
-        "timestamps": os.path.basename(paths["timestamps"])
+        "timestamps": os.path.basename(paths["timestamps"]),
     }
 
 
