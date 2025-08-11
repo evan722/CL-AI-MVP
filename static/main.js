@@ -128,6 +128,7 @@ async function loadInitial() {
   }
   if (!loaded) {
     await loadLocalSlides(currentId);
+
   }
   outputVideo.style.display = 'block';
   avatarFrame.style.display = 'none';
@@ -141,6 +142,7 @@ async function loadInitial() {
 }
 
 window.addEventListener('load', loadInitial);
+
 
 playPauseBtn.onclick = () => {
   if (outputVideo.paused) {
@@ -166,12 +168,14 @@ nextSlideBtn.onclick = () => {
   }
 };
 
+
 outputVideo.ontimeupdate = () => {
   if (segmentEnd !== null && outputVideo.currentTime >= segmentEnd) {
     outputVideo.pause();
     playPauseBtn.textContent = 'Play';
     segmentEnd = null;
   }
+
 };
 
 chatBtn.onclick = async () => {
@@ -224,3 +228,4 @@ chatBtn.onclick = async () => {
 uploadBtn.onclick = () => {
   window.location.href = '/upload';
 };
+
