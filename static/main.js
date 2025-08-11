@@ -19,6 +19,7 @@ function startStreaming() {
   const ws = new WebSocket(`ws://${location.host}/ws/avatar/${currentId}`);
   let seenFrame = false;
 
+
   ws.onmessage = ev => {
     if (ev.data.startsWith('RESULT::')) {
       outputVideo.src = `/outputs/${ev.data.substring(8)}`;
@@ -41,6 +42,7 @@ function startStreaming() {
     }
     console.log('stream closed');
   };
+
 }
 
 async function loadInitial() {
@@ -62,6 +64,7 @@ async function loadInitial() {
   slidesVideo.load();
   outputVideo.play().catch(() => {});
   slidesVideo.play().catch(() => {});
+
 
   startStreaming();
 }
@@ -164,4 +167,5 @@ chatBtn.onclick = async () => {
 uploadBtn.onclick = () => {
   window.location.href = '/upload';
 };
+
 
