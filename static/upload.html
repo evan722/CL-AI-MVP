@@ -17,6 +17,24 @@
 
     label { display: block; margin-bottom: 10px; }
     button { padding: 8px 12px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .doc-section {
+      background: #fff;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .doc-section h3 {
+      margin-top: 0;
+      color: #3f51b5;
+    }
+    .doc-section a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .doc-section a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -30,7 +48,6 @@
     </label>
     <label>Slides PDF (optional):
       <input id="slidesFile" type="file" accept="application/pdf" />
-
     </label>
     <label>Audio narration:
       <input id="audioFile" type="file" accept="audio/*" />
@@ -43,9 +60,33 @@
     </label>
     <button id="uploadBtn">Upload & Generate Avatar</button>
     <p id="status"></p>
+
+    <div class="doc-section">
+      <h3>How to Get These Files</h3>
+      <p>To upload a class for avatar generation, you will need:</p>
+      <ul>
+        <li>A <strong>Slides PDF</strong> or <strong>Google Slides ID/URL</strong> (optional if you already have the video).</li>
+        <li>An <strong>Audio narration</strong> file (<code>.wav</code> or other audio formats).</li>
+        <li>A <strong>Timestamps JSON</strong> file that indicates when each slide changes.</li>
+        <li>An <strong>Avatar image or video</strong> (optional).</li>
+      </ul>
+      <p><strong>Option 1: Generate Your Own Files</strong></p>
+      <p>Use this Colab notebook to process your class recording and slides. Upload your Google Slides (or PDF) and an existing video of the class.  
+      The notebook will generate:</p>
+      <ul>
+        <li><code>audio.wav</code></li>
+        <li><code>video.mp4</code></li>
+        <li><code>timestamps.json</code></li>
+      </ul>
+      <p>You can then upload these here, or replace <code>video.mp4</code> with the slideshow PDF.</p>
+      <p><a href="https://colab.research.google.com/drive/10NGChzbL6-X3q0J56o1F0T0jJbENqGx_?authuser=4#scrollTo=tLJJkXIUaoFU" target="_blank">📄 Open the Colab Notebook</a></p>
+
+      <p><strong>Option 2: Use Pre-Generated Test Files</strong></p>
+      <p>If you just want to test the upload without generating your own files, use these pre-made files:</p>
+      <p><a href="https://drive.google.com/drive/u/0/folders/1XetXGJ4bEs5ynxdedFUol4ZfQxEsa9zj" target="_blank">📂 Download Pre-Generated Files</a></p>
+    </div>
   </main>
 
   <script src="/static/upload.js"></script>
 </body>
 </html>
-
