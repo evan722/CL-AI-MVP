@@ -1,9 +1,9 @@
 # MuseTalk API App
 
 This project shows how to integrate the [fal.ai](https://fal.ai) hosted
-**MuseTalk** model into a FastAPI web application.  Users upload:
+**MuseTalk** model into a FastAPI web application. Users upload:
 
-* a **slides video**
+* a **slides PDF** *or* Google Slides presentation ID
 * the matching **audio narration**
 * a **timestamps.json** file for slide cues
 * an **avatar image or video** (JPG/PNG or MP4)
@@ -28,8 +28,10 @@ real‑time preview if the model supports it.
    uvicorn app.main:app --host 0.0.0.0 --port 8080
    ```
 
-4. Visit `http://localhost:8080` to access the web interface.  Upload your
-   files and either generate the final video or start the real-time stream.
+4. Visit `http://localhost:8080` to access the web interface. A demo lesson
+   from the `inputs/` folder loads automatically. Use the **Upload Class**
+   page to provide your own assets (slides PDF or Google Slides ID, audio,
+   timestamps and avatar).
 
 All heavy computation happens on fal.ai.  No local models are required,
 but the ``FAL_KEY`` environment variable must be present.
@@ -48,4 +50,11 @@ While playing the lesson, pause and type a question in the textbox. The backend
 will query GPT, synthesise audio using ``gTTS`` and generate a short video of
 the avatar speaking the answer. After playback finishes, the lesson resumes
 automatically.
+
+## Default demo content
+
+The `inputs/` folder contains `slides.pdf`, `audio.wav`, `timestamps.json` and
+`avatar1.mp4`. These are copied into place at startup so the home page always
+shows a working example. Replace these files with your own before launching the
+server to change the preloaded class.
 

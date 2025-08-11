@@ -4,7 +4,7 @@ FROM python:3.10-slim
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && \
     TZ=Etc/UTC apt install -y tzdata && \
-    apt install -y ffmpeg git curl && \
+    apt install -y ffmpeg git curl poppler-utils && \
     apt clean
 
 # Set working directory
@@ -22,6 +22,7 @@ RUN mkdir -p uploads outputs
 # Copy your FastAPI app and frontend files
 COPY app ./app
 COPY static ./static
+COPY inputs ./inputs
 
 # Start FastAPI app using uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
