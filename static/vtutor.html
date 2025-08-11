@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>VTutor Chat Demo</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f6fa;
+    }
+    .unity-frame {
+      width: 400px;
+      height: 400px;
+      border: none;
+      display: block;
+      margin: 0 auto;
+    }
+    #chat {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    #question {
+      flex: 1;
+      padding: 8px;
+    }
+    #askBtn {
+      padding: 8px 12px;
+    }
+    #answer {
+      margin-top: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <iframe src="http://full.iframe.sdk.vtutor.tools" id="unity-iframe" class="unity-frame"></iframe>
+  <div id="chat">
+    <input id="question" type="text" placeholder="Ask a question" />
+    <button id="askBtn">Ask</button>
+  </div>
+  <div id="answer"></div>
+  <script src="/static/vtutor.js"></script>
+</body>
+</html>

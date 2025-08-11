@@ -48,6 +48,12 @@ app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 def index():
     return FileResponse("static/index.html")
 
+
+@app.get("/vtutor")
+def vtutor_page():
+    """Serve a simple page that embeds the VTutor avatar iframe."""
+    return FileResponse("static/vtutor.html")
+
 @app.post("/upload")
 async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, avatar: UploadFile):
     uid = uuid.uuid4().hex
@@ -167,3 +173,34 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=500, detail=f"MuseTalk error: {exc}")
 
     return {"answer": answer, "video": output_name}
+
+
+class VTutorChatRequest(BaseModel):
+    """Simplified chat request for VTutor avatar speech."""
+    question: str
+    slide_index: int | None = None
+    slide_text: str | None = None
+
+
+@app.post("/vtutor_chat")
+async def vtutor_chat(req: VTutorChatRequest):
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set")
+
+    client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    prompt = (
+        f"You are helping a student. They are currently on slide {req.slide_index or ''}. "
+        f"Slide text: {req.slide_text or ''}. Question: {req.question}"
+    )
+
+    try:
+        completion = await asyncio.to_thread(
+            client.chat.completions.create,
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        answer = completion.choices[0].message.content.strip()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"LLM error: {exc}")
+
+    return {"answer": answer}
