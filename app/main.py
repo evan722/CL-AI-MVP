@@ -14,7 +14,7 @@ import os
 import asyncio
 import shutil
 import json
-
+import subprocess
 
 import openai
 import requests
@@ -80,23 +80,49 @@ def _prepare_default_class() -> None:
         # If any demo asset is missing, simply skip generation
         return
 
-    # Generate simple placeholder slides so the default class always has
-    # visible content even without a Google Slides ID.
+    # Generate slide images for the default class. First attempt to extract
+    # frames from the bundled demo video; if that fails, fall back to
+    # placeholder images so that slide navigation still works.
+    src_video = os.path.join(src_dir, "video.mp4")
+    generated = False
     try:
         with open(dst_ts) as f:
             times = json.load(f)
-        for i in range(len(times)):
-            url = f"https://placehold.co/1280x720?text=Slide+{i+1}"
-            img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i+1}.png")
-            try:
-                resp = requests.get(url, timeout=10)
-                if resp.ok:
-                    with open(img_path, "wb") as imgf:
-                        imgf.write(resp.content)
-            except Exception:
-                break
-    except Exception:
-        pass
+        if os.path.exists(src_video):
+            for i, t in enumerate(times[:-1]):
+                img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i+1}.png")
+                cmd = [
+                    "ffmpeg",
+                    "-y",
+                    "-ss",
+                    str(t),
+                    "-i",
+                    src_video,
+                    "-vframes",
+                    "1",
+                    img_path,
+                ]
+                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            generated = True
+    except Exception as exc:
+        print(f"Failed to extract slides from video: {exc}")
+
+    if not generated:
+        try:
+            with open(dst_ts) as f:
+                times = json.load(f)
+            for i in range(len(times) - 1):
+                url = f"https://placehold.co/1280x720?text=Slide+{i+1}"
+                img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i+1}.png")
+                try:
+                    resp = requests.get(url, timeout=10)
+                    if resp.ok:
+                        with open(img_path, "wb") as imgf:
+                            imgf.write(resp.content)
+                except Exception:
+                    break
+        except Exception:
+            pass
 
 
     output_path = os.path.join("outputs", f"{DEFAULT_ID}.mp4")

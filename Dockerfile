@@ -22,6 +22,7 @@ RUN mkdir -p uploads outputs
 # Copy your FastAPI app and frontend files
 COPY app ./app
 COPY static ./static
+COPY inputs ./inputs
 
 # Start FastAPI app using uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

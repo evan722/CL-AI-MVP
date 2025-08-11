@@ -91,7 +91,6 @@ async function loadLocalSlides(id) {
     }
   }
   return slides.length > 0;
-
 }
 
 function showSlide(idx) {
@@ -138,12 +137,12 @@ async function loadInitial() {
     if (slides.length) {
       showSlide(0);
     }
-
   };
   startStreaming();
 }
 
 window.addEventListener('load', loadInitial);
+
 
 playPauseBtn.onclick = () => {
   if (outputVideo.paused) {
