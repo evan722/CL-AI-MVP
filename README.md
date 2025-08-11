@@ -49,3 +49,11 @@ will query GPT, synthesise audio using ``gTTS`` and generate a short video of
 the avatar speaking the answer. After playback finishes, the lesson resumes
 automatically.
 
+## VTutor Chat Demo
+
+For a lightweight chat experience that speaks answers live in the browser, a
+VTutor iframe has been added. Start the server and visit
+`http://localhost:8080/vtutor` to try it. Enter a question and the backend will
+generate a GPT response which is sent to the VTutor avatar via `postMessage`
+for speech synthesis.
+
