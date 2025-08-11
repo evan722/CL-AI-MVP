@@ -25,4 +25,7 @@ COPY static ./static
 COPY inputs ./inputs
 
 # Start FastAPI app using uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Allow Cloud Run to supply the port via the PORT env variable.
+# Default to 8080 for local development.
+EXPOSE 8080
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
