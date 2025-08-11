@@ -9,9 +9,64 @@ const chatInput = document.getElementById('chatInput');
 const chatBtn = document.getElementById('chatBtn');
 const chatAnswer = document.getElementById('chatAnswer');
 const chatVideo = document.getElementById('chatVideo');
+const uploadBtn = document.getElementById('uploadBtn');
 
 let timestamps = [];
 let currentId = null;
+
+function startStreaming() {
+  if (!currentId) return;
+  const ws = new WebSocket(`ws://${location.host}/ws/avatar/${currentId}`);
+  let seenFrame = false;
+
+  ws.onmessage = ev => {
+    if (ev.data.startsWith('RESULT::')) {
+      outputVideo.src = `/outputs/${ev.data.substring(8)}`;
+      outputVideo.style.display = 'block';
+      avatarFrame.style.display = 'none';
+      outputVideo.play();
+    } else {
+      if (!seenFrame) {
+        avatarFrame.style.display = 'block';
+        outputVideo.style.display = 'none';
+        seenFrame = true;
+      }
+      avatarFrame.src = 'data:image/jpeg;base64,' + ev.data;
+    }
+  };
+  ws.onclose = () => {
+    if (!seenFrame) {
+      outputVideo.style.display = 'block';
+      avatarFrame.style.display = 'none';
+    }
+    console.log('stream closed');
+  };
+}
+
+async function loadInitial() {
+  const params = new URLSearchParams(window.location.search);
+  currentId = params.get('id') || 'default';
+
+  outputVideo.src = `/outputs/${currentId}.mp4`;
+  slidesVideo.src = `/uploads/${currentId}_slides.mp4`;
+  try {
+    const res = await fetch(`/uploads/${currentId}_timestamps.json`);
+    timestamps = await res.json();
+  } catch {
+    timestamps = [];
+  }
+
+  outputVideo.style.display = 'block';
+  avatarFrame.style.display = 'none';
+  outputVideo.load();
+  slidesVideo.load();
+  outputVideo.play().catch(() => {});
+  slidesVideo.play().catch(() => {});
+
+  startStreaming();
+}
+
+window.addEventListener('load', loadInitial);
 
 playPauseBtn.onclick = () => {
   if (outputVideo.paused) {
@@ -34,54 +89,6 @@ forwardBtn.onclick = () => {
   slidesVideo.currentTime = newTime;
 };
 
-document.getElementById('uploadBtn').onclick = async () => {
-  const videoFile = document.getElementById('videoFile').files[0];
-  const audioFile = document.getElementById('audioFile').files[0];
-  const timeFile = document.getElementById('timeFile').files[0];
-  const avatarFile = document.getElementById('avatarFile').files[0];
-
-  if (!videoFile || !audioFile || !timeFile || !avatarFile) {
-    alert('Please select slides, audio, timestamps and avatar files.');
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('video', videoFile);
-  formData.append('audio', audioFile);
-  formData.append('timestamps', timeFile);
-  formData.append('avatar', avatarFile);
-
-  try {
-    const res = await fetch('/upload', { method: 'POST', body: formData });
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`Upload failed: ${res.status} - ${t}`);
-    }
-    const data = await res.json();
-    if (data.error || data.detail) {
-      throw new Error(data.error || data.detail);
-    }
-
-    if (!data.output_video || !data.slides_video) {
-      throw new Error('Server did not return expected file paths');
-    }
-
-    currentId = data.id;
-    outputVideo.src = `/outputs/${data.output_video}`;
-    slidesVideo.src = `/uploads/${data.slides_video}`;
-    const jsonText = await timeFile.text();
-    timestamps = JSON.parse(jsonText);
-    outputVideo.style.display = 'block';
-    avatarFrame.style.display = 'none';
-    outputVideo.load();
-    slidesVideo.load();
-  } catch (err) {
-    console.error('Upload error:', err);
-    alert('Failed to generate video: ' + (err.message || err));
-
-  }
-};
-
 outputVideo.onplay = () => {
   slidesVideo.currentTime = outputVideo.currentTime;
   slidesVideo.play();
@@ -102,31 +109,8 @@ outputVideo.ontimeupdate = () => {
   slideInfo.textContent = `Slide ${idx + 1}`;
 };
 
-document.getElementById('streamBtn').onclick = () => {
-  if (!currentId) {
-    alert('Upload files first.');
-    return;
-  }
-  const ws = new WebSocket(`ws://${location.host}/ws/avatar/${currentId}`);
-  avatarFrame.style.display = 'block';
-  outputVideo.style.display = 'none';
-
-  ws.onmessage = ev => {
-    if (ev.data.startsWith('RESULT::')) {
-      outputVideo.src = `/outputs/${ev.data.substring(8)}`;
-      outputVideo.style.display = 'block';
-      avatarFrame.style.display = 'none';
-      outputVideo.play();
-    } else {
-      avatarFrame.src = 'data:image/jpeg;base64,' + ev.data;
-    }
-  };
-  ws.onclose = () => console.log('stream closed');
-};
-
 chatBtn.onclick = async () => {
   if (!currentId || chatBtn.disabled) {
-    if (!currentId) alert('Upload files first.');
     return;
   }
   const question = chatInput.value.trim();
@@ -176,3 +160,8 @@ chatBtn.onclick = async () => {
     chatBtn.disabled = false;
   }
 };
+
+uploadBtn.onclick = () => {
+  window.location.href = '/upload';
+};
+

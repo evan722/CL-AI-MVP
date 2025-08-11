@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import os
 import asyncio
+import shutil
 
 import openai
 from gtts import gTTS
@@ -44,9 +45,55 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
+
+# Prepare a default class from bundled input assets
+DEFAULT_ID = "default"
+
+
+def _prepare_default_class() -> None:
+    """Copy demo assets into place and pre-generate the default avatar."""
+
+    os.makedirs("uploads", exist_ok=True)
+    os.makedirs("outputs", exist_ok=True)
+
+    src_dir = "inputs"
+    src_video = os.path.join(src_dir, "video.mp4")
+    src_audio = os.path.join(src_dir, "audio.wav")
+    src_ts = os.path.join(src_dir, "timestamps.json")
+    src_avatar = os.path.join(src_dir, "avatar1.mp4")
+
+    dst_video = os.path.join("uploads", f"{DEFAULT_ID}_slides.mp4")
+    dst_audio = os.path.join("uploads", f"{DEFAULT_ID}_audio.wav")
+    dst_ts = os.path.join("uploads", f"{DEFAULT_ID}_timestamps.json")
+    dst_avatar = os.path.join("uploads", f"{DEFAULT_ID}_avatar.mp4")
+
+    try:
+        shutil.copyfile(src_video, dst_video)
+        shutil.copyfile(src_audio, dst_audio)
+        shutil.copyfile(src_ts, dst_ts)
+        shutil.copyfile(src_avatar, dst_avatar)
+    except FileNotFoundError:
+        # If any demo asset is missing, simply skip generation
+        return
+
+    output_path = os.path.join("outputs", f"{DEFAULT_ID}.mp4")
+    if not os.path.exists(output_path):
+        try:
+            run_musetalk(dst_audio, dst_avatar, output_path)
+        except Exception as exc:  # best-effort
+            print(f"Failed to generate default class: {exc}")
+
+
+_prepare_default_class()
+
 @app.get("/")
 def index():
     return FileResponse("static/index.html")
+
+
+@app.get("/upload")
+def upload_page():
+    return FileResponse("static/upload.html")
 
 @app.post("/upload")
 async def upload(video: UploadFile, audio: UploadFile, timestamps: UploadFile, avatar: UploadFile):
