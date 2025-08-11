@@ -2,28 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>MuseTalk Avatar App</title>
+  <title>Virtual Classroom</title>
   <style>
     body {
       margin: 0;
       font-family: sans-serif;
-      background: #f4f6fa;
+      background: #e8e5d1;
+    }
+    header {
+      background: #3f51b5;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     #root {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: calc(100vh - 60px);
     }
     #playerRow {
       display: flex;
       flex: 1;
+      padding: 10px;
+      gap: 10px;
     }
     #slidesBox, #avatarBox {
       flex: 1;
       position: relative;
-      background: black;
+      background: #2e7d32;
+      border: 8px solid #bfa27a;
+      border-radius: 8px;
     }
-    #slidesVideo, #outputVideo, #chatVideo {
+    #slidesVideo, #outputVideo, #chatVideo, #avatarFrame {
       width: 100%;
       height: 100%;
     }
@@ -32,7 +44,7 @@
       top: 10px;
       left: 10px;
       padding: 4px 8px;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       color: #fff;
       border-radius: 4px;
       font-size: 14px;
@@ -44,11 +56,8 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-    }
-    input[type=file] {
-      border: 1px solid #aaa;
-      padding: 4px;
-      border-radius: 4px;
+      background: #fff;
+      border-radius: 8px;
     }
     button {
       padding: 8px 12px;
@@ -67,6 +76,10 @@
   </style>
 </head>
 <body>
+  <header>
+    <h2>Virtual Classroom</h2>
+    <button id="uploadBtn">Upload Class</button>
+  </header>
   <div id="root">
     <div id="playerRow">
       <div id="slidesBox">
@@ -74,11 +87,12 @@
         <div id="slideInfo">Slide 0</div>
       </div>
       <div id="avatarBox">
-        <img id="avatarFrame" style="width:100%;height:100%;object-fit:contain"/>
-        <video id="outputVideo" style="display:none" controls></video>
+        <img id="avatarFrame" style="display:none;object-fit:contain"/>
+        <video id="outputVideo" controls></video>
         <video id="chatVideo" style="display:none" controls></video>
       </div>
       <div id="controls">
+
         <a href="/upload">Upload new class</a>
         <div id="playbackControls">
           <button id="backBtn">&#9664;&#9664; 5s</button>

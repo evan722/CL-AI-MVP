@@ -9,6 +9,7 @@ const chatInput = document.getElementById('chatInput');
 const chatBtn = document.getElementById('chatBtn');
 const chatAnswer = document.getElementById('chatAnswer');
 const chatVideo = document.getElementById('chatVideo');
+const uploadBtn = document.getElementById('uploadBtn');
 
 let timestamps = [];
 let currentId = null;
@@ -16,8 +17,8 @@ let currentId = null;
 function startStreaming() {
   if (!currentId) return;
   const ws = new WebSocket(`ws://${location.host}/ws/avatar/${currentId}`);
-  avatarFrame.style.display = 'block';
-  outputVideo.style.display = 'none';
+  let seenFrame = false;
+
 
   ws.onmessage = ev => {
     if (ev.data.startsWith('RESULT::')) {
@@ -26,10 +27,22 @@ function startStreaming() {
       avatarFrame.style.display = 'none';
       outputVideo.play();
     } else {
+      if (!seenFrame) {
+        avatarFrame.style.display = 'block';
+        outputVideo.style.display = 'none';
+        seenFrame = true;
+      }
       avatarFrame.src = 'data:image/jpeg;base64,' + ev.data;
     }
   };
-  ws.onclose = () => console.log('stream closed');
+  ws.onclose = () => {
+    if (!seenFrame) {
+      outputVideo.style.display = 'block';
+      avatarFrame.style.display = 'none';
+    }
+    console.log('stream closed');
+  };
+
 }
 
 async function loadInitial() {
@@ -49,6 +62,9 @@ async function loadInitial() {
   avatarFrame.style.display = 'none';
   outputVideo.load();
   slidesVideo.load();
+  outputVideo.play().catch(() => {});
+  slidesVideo.play().catch(() => {});
+
 
   startStreaming();
 }
@@ -147,4 +163,9 @@ chatBtn.onclick = async () => {
     chatBtn.disabled = false;
   }
 };
+
+uploadBtn.onclick = () => {
+  window.location.href = '/upload';
+};
+
 
