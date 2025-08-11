@@ -136,6 +136,7 @@ prevSlideBtn.onclick = () => {
   if (slideIndex > 0) {
     showSlide(slideIndex - 1);
   }
+
 };
 
 nextSlideBtn.onclick = () => {
@@ -150,6 +151,7 @@ outputVideo.ontimeupdate = () => {
     playPauseBtn.textContent = 'Play';
     segmentEnd = null;
   }
+
 };
 
 chatBtn.onclick = async () => {
@@ -202,3 +204,4 @@ chatBtn.onclick = async () => {
 uploadBtn.onclick = () => {
   window.location.href = '/upload';
 };
+

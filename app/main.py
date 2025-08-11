@@ -72,6 +72,7 @@ def _prepare_default_class() -> None:
         shutil.copyfile(src_ts, dst_ts)
         shutil.copyfile(src_avatar, dst_avatar)
         shutil.copyfile(src_slides_id, dst_slides_id)
+
     except FileNotFoundError:
         # If any demo asset is missing, simply skip generation
         return
