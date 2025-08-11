@@ -149,7 +149,16 @@ def _prepare_default_class() -> None:
             print(f"Failed to generate default class: {exc}")
 
 
-_prepare_default_class()
+# Prepare default assets in the background so startup is quick
+@app.on_event("startup")
+async def _schedule_default_class() -> None:
+    async def prepare() -> None:
+        try:
+            await asyncio.to_thread(_prepare_default_class)
+        except Exception as exc:  # best-effort
+            print(f"Failed to generate default class: {exc}")
+
+    asyncio.create_task(prepare())
 
 @app.get("/")
 def index():
