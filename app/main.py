@@ -75,6 +75,7 @@ def _prepare_default_class() -> None:
         shutil.copyfile(src_ts, dst_ts)
         shutil.copyfile(src_avatar, dst_avatar)
         shutil.copyfile(src_slides_id, dst_slides_id)
+
     except FileNotFoundError:
         # If any demo asset is missing, simply skip generation
         return
@@ -122,6 +123,7 @@ def _prepare_default_class() -> None:
                     break
         except Exception:
             pass
+
 
     output_path = os.path.join("outputs", f"{DEFAULT_ID}.mp4")
     if not os.path.exists(output_path):
