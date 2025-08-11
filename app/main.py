@@ -65,6 +65,8 @@ def _prepare_default_class() -> None:
     src_ts = os.path.join(src_dir, "timestamps.json")
     src_avatar = os.path.join(src_dir, "avatar1.mp4")
     src_slides_id = os.path.join(src_dir, "slides_id.txt")
+    src_pdf = os.path.join(src_dir, "slides.pdf")
+
     dst_audio = os.path.join("uploads", f"{DEFAULT_ID}_audio.wav")
     dst_ts = os.path.join("uploads", f"{DEFAULT_ID}_timestamps.json")
     dst_avatar = os.path.join("uploads", f"{DEFAULT_ID}_avatar.mp4")
@@ -80,32 +82,46 @@ def _prepare_default_class() -> None:
         # If any demo asset is missing, simply skip generation
         return
 
-    # Generate slide images for the default class. First attempt to extract
-    # frames from the bundled demo video; if that fails, fall back to
-    # placeholder images so that slide navigation still works.
-    src_video = os.path.join(src_dir, "video.mp4")
+    # Generate slide images for the default class. Prefer converting a
+    # bundled ``slides.pdf``; if it is missing, fall back to extracting frames
+    # from ``video.mp4`` or placeholder images.
     generated = False
     try:
-        with open(dst_ts) as f:
-            times = json.load(f)
-        if os.path.exists(src_video):
-            for i, t in enumerate(times[:-1]):
-                img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i+1}.png")
-                cmd = [
-                    "ffmpeg",
-                    "-y",
-                    "-ss",
-                    str(t),
-                    "-i",
-                    src_video,
-                    "-vframes",
-                    "1",
-                    img_path,
-                ]
-                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if os.path.exists(src_pdf):
+            from pdf2image import convert_from_path
+
+            images = convert_from_path(src_pdf)
+            for i, img in enumerate(images, start=1):
+                img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i}.png")
+                img.save(img_path, "PNG")
             generated = True
     except Exception as exc:
-        print(f"Failed to extract slides from video: {exc}")
+        print(f"Failed to render PDF slides: {exc}")
+
+    if not generated:
+        src_video = os.path.join(src_dir, "video.mp4")
+        try:
+            with open(dst_ts) as f:
+                times = json.load(f)
+            if os.path.exists(src_video):
+                for i, t in enumerate(times[:-1]):
+                    img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i+1}.png")
+                    cmd = [
+                        "ffmpeg",
+                        "-y",
+                        "-ss",
+                        str(t),
+                        "-i",
+                        src_video,
+                        "-vframes",
+                        "1",
+                        img_path,
+                    ]
+                    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                generated = True
+        except Exception as exc:
+            print(f"Failed to extract slides from video: {exc}")
+
 
     if not generated:
         try:
@@ -149,7 +165,9 @@ async def upload(
     audio: UploadFile,
     timestamps: UploadFile,
     avatar: UploadFile,
-    slides_id: str = Form(...),
+    slides: UploadFile | None = None,
+    slides_id: str = Form(""),
+
 ):
     uid = uuid.uuid4().hex
     os.makedirs("uploads", exist_ok=True)
@@ -159,13 +177,29 @@ async def upload(
     paths = {
         "audio": os.path.join("uploads", f"{uid}_audio.wav"),
         "timestamps": os.path.join("uploads", f"{uid}_timestamps.json"),
-        "avatar": os.path.join("uploads", f"{uid}_avatar{os.path.splitext(avatar.filename)[1] or '.mp4'}"),
+        "avatar": os.path.join(
+            "uploads", f"{uid}_avatar{os.path.splitext(avatar.filename)[1] or '.mp4'}"
+        ),
     }
     for file, path in zip([audio, timestamps, avatar], paths.values()):
         with open(path, "wb") as f:
             f.write(await file.read())
 
-    # Save slides presentation id
+    if slides is not None:
+        pdf_path = os.path.join("uploads", f"{uid}_slides.pdf")
+        with open(pdf_path, "wb") as f:
+            f.write(await slides.read())
+        try:
+            from pdf2image import convert_from_path
+
+            images = await asyncio.to_thread(convert_from_path, pdf_path)
+            for i, img in enumerate(images, start=1):
+                img.save(os.path.join("uploads", f"{uid}_slide_{i}.png"), "PNG")
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"PDF convert error: {exc}")
+        slides_id = ""
+
+
     with open(os.path.join("uploads", f"{uid}_slides_id.txt"), "w") as f:
         f.write(slides_id.strip())
 

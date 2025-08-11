@@ -4,7 +4,7 @@ FROM python:3.10-slim
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && \
     TZ=Etc/UTC apt install -y tzdata && \
-    apt install -y ffmpeg git curl && \
+    apt install -y ffmpeg git curl poppler-utils && \
     apt clean
 
 # Set working directory
