@@ -13,8 +13,11 @@ import uuid
 import os
 import asyncio
 import shutil
+import json
+
 
 import openai
+import requests
 from gtts import gTTS
 from pydantic import BaseModel
 # Import the runner in a way that works for both ``uvicorn app.main:app`` and
@@ -76,6 +79,25 @@ def _prepare_default_class() -> None:
     except FileNotFoundError:
         # If any demo asset is missing, simply skip generation
         return
+
+    # Generate simple placeholder slides so the default class always has
+    # visible content even without a Google Slides ID.
+    try:
+        with open(dst_ts) as f:
+            times = json.load(f)
+        for i in range(len(times)):
+            url = f"https://placehold.co/1280x720?text=Slide+{i+1}"
+            img_path = os.path.join("uploads", f"{DEFAULT_ID}_slide_{i+1}.png")
+            try:
+                resp = requests.get(url, timeout=10)
+                if resp.ok:
+                    with open(img_path, "wb") as imgf:
+                        imgf.write(resp.content)
+            except Exception:
+                break
+    except Exception:
+        pass
+
 
     output_path = os.path.join("outputs", f"{DEFAULT_ID}.mp4")
     if not os.path.exists(output_path):

@@ -75,6 +75,23 @@ async function loadSlides(presentationId) {
     console.error('Failed to load slides', err);
     slides = [];
   }
+  return slides.length > 0;
+}
+
+async function loadLocalSlides(id) {
+  slides = [];
+  for (let i = 1; i < 100; i++) {
+    const url = `/uploads/${id}_slide_${i}.png`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) break;
+      slides.push({thumb: url, text: ''});
+    } catch {
+      break;
+    }
+  }
+  return slides.length > 0;
+
 }
 
 function showSlide(idx) {
@@ -106,14 +123,22 @@ async function loadInitial() {
     slidesId = await (await fetch(`/uploads/${currentId}_slides_id.txt`)).text();
     slidesId = slidesId.trim();
   } catch {}
-  if (slidesId) {
-    await loadSlides(slidesId);
+  let loaded = false;
+  if (slidesId && slidesId !== 'presentation-id-placeholder') {
+    loaded = await loadSlides(slidesId);
+  }
+  if (!loaded) {
+    await loadLocalSlides(currentId);
+
   }
   outputVideo.style.display = 'block';
   avatarFrame.style.display = 'none';
   outputVideo.load();
   outputVideo.onloadedmetadata = () => {
-    showSlide(0);
+    if (slides.length) {
+      showSlide(0);
+    }
+
   };
   startStreaming();
 }
@@ -136,7 +161,6 @@ prevSlideBtn.onclick = () => {
   if (slideIndex > 0) {
     showSlide(slideIndex - 1);
   }
-
 };
 
 nextSlideBtn.onclick = () => {
@@ -144,6 +168,7 @@ nextSlideBtn.onclick = () => {
     showSlide(slideIndex + 1);
   }
 };
+
 
 outputVideo.ontimeupdate = () => {
   if (segmentEnd !== null && outputVideo.currentTime >= segmentEnd) {
