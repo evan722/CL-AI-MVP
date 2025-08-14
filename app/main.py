@@ -145,11 +145,23 @@ def _prepare_default_class() -> None:
 
 
     output_path = os.path.join("outputs", f"{DEFAULT_ID}.mp4")
-    if os.environ.get("FAL_KEY") and not os.path.exists(output_path):
+    if os.path.exists(output_path):
+        return
+
+    if os.environ.get("FAL_KEY"):
         try:
             run_musetalk(dst_audio, dst_avatar, output_path)
+            return
         except Exception as exc:  # best-effort
             print(f"Failed to generate default class: {exc}")
+
+    # Fallback to pre-rendered demo video if API generation is unavailable
+    src_video = os.path.join(src_dir, "video.mp4")
+    try:
+        if os.path.exists(src_video):
+            shutil.copyfile(src_video, output_path)
+    except Exception as exc:
+        print(f"Failed to copy demo video: {exc}")
 
 
 # Prepare default assets in the background so startup is quick
