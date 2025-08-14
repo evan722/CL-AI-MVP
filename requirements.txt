@@ -5,3 +5,7 @@ aiofiles
 python-multipart
 requests
 fal-client
+openai>=1.0
+
+gTTS
+pdf2image
