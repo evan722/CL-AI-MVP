@@ -58,3 +58,7 @@ The `inputs/` folder contains `slides.pdf`, `audio.wav`, `timestamps.json` and
 shows a working example. Replace these files with your own before launching the
 server to change the preloaded class.
 
+
+## New Next.js Frontend
+
+A modern React UI is available in the `frontend/` directory. It wraps the existing upload and player flows without changing any API routes. See `frontend/README.md` for setup and integration instructions.

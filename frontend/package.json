@@ -1,0 +1,31 @@
+{
+  "name": "cl-ai-mvp-ui",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "autoprefixer": "10.4.16",
+    "class-variance-authority": "0.7.0",
+    "clsx": "1.2.1",
+    "framer-motion": "10.16.5",
+    "lucide-react": "0.291.0",
+    "next": "14.2.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "tailwind-merge": "2.0.0",
+    "tailwindcss": "3.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.25",
+    "@types/react": "18.2.36",
+    "eslint": "8.55.0",
+    "eslint-config-next": "14.2.3",
+    "postcss": "8.4.31",
+    "typescript": "5.3.3"
+  }
+}
