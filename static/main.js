@@ -19,12 +19,13 @@ let currentId = null;
 
 function startStreaming() {
   if (!currentId) return;
-  const ws = new WebSocket(`ws://${location.host}/ws/avatar/${currentId}`);
+  const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${wsProtocol}://${location.host}/ws/avatar/${currentId}`);
   let seenFrame = false;
 
   ws.onmessage = ev => {
     if (ev.data.startsWith('RESULT::')) {
-      outputVideo.src = `/outputs/${ev.data.substring(8)}`;
+      outputVideo.src = `${location.origin}/outputs/${ev.data.substring(8)}`;
       outputVideo.style.display = 'block';
       avatarFrame.style.display = 'none';
       outputVideo.play();
@@ -81,7 +82,7 @@ async function loadSlides(presentationId) {
 async function loadLocalSlides(id) {
   slides = [];
   for (let i = 1; i < 100; i++) {
-    const url = `/uploads/${id}_slide_${i}.png`;
+    const url = `${location.origin}/uploads/${id}_slide_${i}.png`;
     try {
       const resp = await fetch(url);
       if (!resp.ok) break;
@@ -110,16 +111,16 @@ async function loadInitial() {
   const params = new URLSearchParams(window.location.search);
   currentId = params.get('id') || 'default';
 
-  outputVideo.src = `/outputs/${currentId}.mp4`;
+  outputVideo.src = `${location.origin}/outputs/${currentId}.mp4`;
   try {
-    const res = await fetch(`/uploads/${currentId}_timestamps.json`);
+    const res = await fetch(`${location.origin}/uploads/${currentId}_timestamps.json`);
     timestamps = await res.json();
   } catch {
     timestamps = [];
   }
   let slidesId = '';
   try {
-    slidesId = await (await fetch(`/uploads/${currentId}_slides_id.txt`)).text();
+    slidesId = await (await fetch(`${location.origin}/uploads/${currentId}_slides_id.txt`)).text();
     slidesId = slidesId.trim();
   } catch {}
   let loaded = false;
